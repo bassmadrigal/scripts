@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+# By Jeremy Hansen <jebrhansen -at- gmail.com> circa 2016
+#
+# Feel free to use and abuse this "one-liner"
+#
+# Script I created to list all my videos that have 2 channel in the name, but has 6 channels as well (usually dual audio)
+
+# REQUIRES: mediainfo, libmediainfo (both available on SBo)
+
+find /share/videos/  -type f ! -name "*.srt" -name "*1080p*" -name "*2ch*" -print0 | while IFS= read -r -d $'\0' line; do
+
+  channels=$(/usr/bin/mediainfo "$line" | grep channels | grep 6 | egrep -v Original)
+  
+  if [ -n "$channels" ]; then
+    echo $line
+  fi
+  
+done
