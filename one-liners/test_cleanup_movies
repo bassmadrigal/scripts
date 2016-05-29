@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+# By Jeremy Hansen <jebrhansen -at- gmail.com> circa 2014
+#
+# Feel free to use and abuse this "one-liner"
+#
+# Used to find all xbmc/kodi exported information in my collection and remove it
+
+# "*.tbn" "*.nfo" "*.jpg" "*.txt" "*.bmp" "*.db" "*.gif" "*.gspot" "*.html" "*.idx" "*.info" "*.log" "*.lst" "*.png" "*.rar" "*.rtf"
+# "*.sfv" "*.smi" "*.sub" "*.tif" "*.url" "*.zip" "*.exe" "*.xpi"
+
+for i in "banner.jpg" "clearart.png" "logo.png" "poster.jpg" "thumbs.db"
+do
+  echo "============================="$i"================================"
+  find . -iname "$i" -delete
+done
