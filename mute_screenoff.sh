@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2016 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2014 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
