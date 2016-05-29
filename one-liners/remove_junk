@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# By Jeremy Hansen <jebrhansen -at- gmail.com> circa 2014
+#
+# Feel free to use and abuse this "one-liner"
+#
+# Used to find all xbmc/kodi exported information in my collection and remove it
+
+for i in "$(locate tbn | grep Movies | egrep -v .actors | sort -t/ +4)"
+do
+  DIR=$(echo $i | awk -F'/' '{print "/" $2 "/" $3 "/" $4 "/" $5 "/"}')
+  echo $DIR
+  rm -r "$DIR*.tbn" "$DIR*.nfo" "$DIR*.jpg" "$DIR*.txt" "$DIR.actors"
+done
