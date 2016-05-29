@@ -1,0 +1,220 @@
+#!/bin/bash
+# Copyright (C) 2006 Jeremy Brent Hansen
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# This script is no longer maintained and is only here for historical
+# reasons. It was never adapted to work with wpa_supplicant and only works
+# with wireless networks using WEP encryption (which is a serious security
+# hole, and you shouldn't be using it). I developed this script around the
+# time the predecessor to wicd was created. They ended up doing everything 
+# I had wanted to use with this. Long story short, use wicd or Network Manager
+# to connect to your wireless networks.
+
+# bpws is short for Bash Personal Wireless Script
+
+# This script was created by Jeremy Brent Hansen for the purpose of
+# connecting to commonly used wireless connections. Eventually I
+# plan on adding capabilities to allow access to any network that
+# is visible in iwlist, if it is encrypted you will need to provide
+# the key.
+#
+# I have not tried this with wpa_supplicant although I assume there
+# would not be too much modification.
+#
+# This program does assume you are either root or have sudo setup for
+# at least the following commands: ifconfig, route, iwconfig, chmod,
+# dhcpcd, killall, and iwlist.
+#
+# Please read the main documentation for information on sudo.
+# If you do not want to use sudo, remove all sudo commands in this
+# script.
+#
+# If you use more networks add them with the information found below.
+# The first two are for static ip's, and the following two are used
+# with dhcpcd.
+
+init_Home()
+{
+  essid='Homewifi'
+  key='12345678901234567890123456'
+  dhcpcd='n'
+  ip='xxx.xxx.xxx.xxx'
+  subnet='255.255.255.0'
+  gateway='xxx.xxx.xxx.xxx'
+}
+
+init_DN1()
+{
+  essid='DN1'
+  key='12345678901234567890123456'
+  dhcpcd='n'
+  ip='xxx.xxx.xxx.xxx'
+  subnet='255.255.255.0' # Most common
+  gateway='10.0.0.1'
+}
+
+init_UsuqaMiDiq()
+{
+  essid='Usuqa-Mi-Diq'
+  key='12345678901234567890123456'
+  dhcpcd='y'
+}
+
+init_grdianangel()
+{
+  essid='grdianangel'
+  key='12345678901234567890123456'
+  dhcpcd='n'
+}
+
+#############################
+# The Close (finish Script) #
+#############################
+closing()
+{
+  echo "Working"
+  echo "Please wait..."
+
+  if [ $dhcpcd = y ]
+  then
+      # Sudo may not be needed depending on your system
+    sudo /sbin/iwconfig $wifidev essid $essid
+    sudo /sbin/iwconfig $wifidev key $key
+    sudo /sbin/dhcpcd -n $wifidev
+  else
+    sudo /sbin/ifconfig $wifidev $ip netmask $subnet
+    sudo /sbin/route add default gw $gateway $wifidev
+    sudo /sbin/iwconfig $wifidev essid $essid
+    sudo /sbin/iwconfig $wifidev key $key
+    sudo chmod 777 /etc/resolv.conf # Remove if running as root
+    echo "nameserver $gateway" > /etc/resolv.conf
+  fi
+
+  clear
+  echo "******************************************"
+  echo ""
+  echo "You are now setup for: $essid on $wifidev"
+  echo ""
+  echo "******************************************"
+  
+  if [ $quick = y ]
+  then
+    echo -n "Continue to menu?? (y/n) > "
+    read answer
+    if [ $answer = y ]
+    then
+      echo ""
+    else
+      init_close
+    fi
+  else
+    exit 0
+  fi
+}
+
+init_close()
+{
+  clear
+  echo "Thanks"
+  echo "Made by: Jeremy Brent Hansen"
+  echo "2006"
+  sleep 1
+  clear
+  exit 0
+}
+
+
+showmenu()
+{
+  clear
+  echo "******************************************"
+  echo "Wireless Configuration V2.5"
+  echo ""
+  echo "Select a Network"
+  echo ""
+  echo "1. Home"
+  echo "2. DN1"
+  echo "3. Usuqa-Mi-Diq"
+  echo "4. grdianangel"
+    # you can put more lines here for other networks
+  echo ""
+  echo "q for Quit"
+  echo "******************************************"
+  echo ""
+  echo -n "Enter Selection Here > "
+  read selection
+}
+
+gui()
+{
+  showmenu
+  quick='n'
+  while true; do
+    case "$selection" in
+      1) clear
+         init_Home
+         closing ;;
+      2) clear
+         init_DN1
+         closing ;;
+      3) clear
+         init_UsuqaMiDiq
+         closing ;;
+      4) clear
+         init_grdianangel
+         closing ;;
+        # Add more networks here
+      q) clear
+         init_close ;;
+      *) clear
+         echo "Not an option... Try again"
+         sleep 1 ;;
+    esac
+    showmenu
+  done
+}
+
+sudo killall dhcpcd 2> /dev/null
+wifidev=`/sbin/iwconfig 2> /dev/null | grep ESSID | awk '{print $1}'`
+
+if test -n "$1"
+then
+  quick='y'
+  while true; do
+    case "$1" in
+      1) clear
+         init_Home
+         closing_quick ;;
+      2) clear
+         init_DN1
+         closing_quick ;;
+      3) clear
+         init_UsuqaMiDiq
+         closing_quick ;;
+      4) clear
+         init_grdianangel
+         closing_quick ;;
+        # Add more networks here
+      *) clear
+         gui ;;
+    esac
+  done
+else
+  gui
+fi
