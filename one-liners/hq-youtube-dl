@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# By Jeremy Hansen <jebrhansen -at- gmail.com> circa 2015
+#
+# Feel free to use and abuse this one-liner
+#
+# Simple shell script to download the best quality mp4 using youtube-dl
+# I rename this to "get" and store it in a youtube-rip/ folder for simplicity
+
+/usr/bin/youtube-dl -f bestvideo[ext=mp4]+bestaudio[ext=m4a] $@
