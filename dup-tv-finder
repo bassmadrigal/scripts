@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# Copyright 2016 Jeremy Hansen <jebrhansen -at- gmail.com>
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# This script is used to detect multiple instances of TV show episodes.
+# Currently, it ignores any srt (subtitle) files, but it does pick up other,
+# possibly desired, extensions, such as nfo and sub. Be congnizant of that 
+# when you look at your results. This does expect that your shows are labeled
+# using a folder for the show, and within there, individual folders for each
+# season (the naming scheme of those shouldn't matter), and that your
+# episodes use the "Showname - SXXEXX - Episodename" format.
+# (e.g. Star Trek/Star Trek - Season 1/Star Trek - S01E01 - The Man Trap.avi)
+
+shopt -s nullglob
+
+TVDIR=${TVDIR:-"/share/TV/ongoing/TV Shows"}
+
+for SERIES in "$TVDIR/"*; do
+  SERIES=$(basename "$SERIES")
+  for SEASON in "$TVDIR/$SERIES/"*; do
+    SEASON=$(basename "$SEASON")
+    for FIRST in "$TVDIR/$SERIES/$SEASON/"*; do
+      FIRST=$(basename "$FIRST")
+      if [[ ${FIRST##*.} != "srt" ]]; then
+        CUR_EP=$(echo "$FIRST" | awk -F' - ' '{print $2}')
+        printf "."
+        # If the $CUR_EP variable doesn't contain SXXEXX
+        # run an unil loop and work through the sections
+        # with awk.
+        if [[ $CUR_EP != S[0-9]*E[0-9]* ]]; then
+          COUNT=0
+	  REGEX="(S[0-9]*E[0-9]*)"
+	  until [[ $CUR_EP =~ $REGEX ]]; do
+	    ((COUNT++))
+	    CUR_EP=$(echo "$FIRST" | awk -F' - ' -v COUNT="$COUNT" '{print $COUNT}')
+	    # If it checks 5 fields and doesn't find it, exit the loop
+	    if [[ $COUNT == 5 ]]; then break; fi
+	  done
+	fi
+        if [[ -n $CUR_EP && "$CUR_EP" == $PRE_EP ]]; then
+          printf "\n"
+          echo Repeat: $SERIES/$SEASON/$FIRST
+          echo Repeat: $SERIES/$SEASON/$SECOND
+          echo $CUR_EP "==" $PRE_EP
+        fi
+        SECOND=$FIRST
+        PRE_EP=$CUR_EP
+      fi
+    done
+  SECOND=''
+  PRE_EP=''
+  done
+done
+printf "\n"
