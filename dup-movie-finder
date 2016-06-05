@@ -1,0 +1,48 @@
+#/bin/bash
+#
+# Copyright 2016 Jeremy Hansen <jebrhansen -at- gmail.com>
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# This script will list all movies that have the same title within a directory.
+# It does assume that the year is directly after the title and the year is
+# enclosed by parenthesis (e.g. Movie Title (2000) extra stuff). It should work
+# on a directory filled with other directories containing the movie title or on
+# a directory filled with movies files themselves (although, the latter hasn't 
+# been tested). When complete, it will print out the movies that have the same 
+# name, so you can manually go through and decide whether to keep them. Right
+# now, it only looks at movies titles, so if you have movies that have the same
+# name, but were made in different years (Oceans 11 -- 1960 and 2001), they
+# will both be displayed. I may add a year checker later on.
+
+# Set your movie directory... can be overriden when starting the script.
+# (e.g. MOVDIR=/custom/location dup-movie-finder)
+MOVDIR=${MOVDIR:-/location/to/movies}
+
+# Clear the SECOND variable, just to prevent any passed variables breaking stuff
+SECOND=''
+
+for FIRST in "$MOVDIR/"*; do
+  MOVNAME=$(echo "$FIRST" | awk -F'(' '{print $1}')
+  if [[ $MOVNAME == $(echo "$SECOND" | awk -F'(' '{print $1}') ]]; then
+    echo "$FIRST"
+    echo "$SECOND"
+  fi
+  SECOND="$FIRST"
+done
