@@ -8,6 +8,9 @@
 #
 # Heavily modified for Slackware by Jeremy Brent Hansen <jebrhansen -at- gmail.com>
 #
+# NOTE: This won't work in Slackware 14.0 and earlier due to the OS lacking numfmt. It was
+# introduced in the coreutils package in 14.1.
+#
 # Changelog
 #
 # 2016/05/28 - Added additional comments for github upload
