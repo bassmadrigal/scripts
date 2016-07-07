@@ -14,8 +14,9 @@
 # 2015/11/06 - Initial release of slack-mirror-speedtest.sh
 
 # Add or change mirrors from /etc/slackpkg/mirrors as desired (these are the US mirrors)
-# Ensure there is a beginning after the equal sign and an end quote after the final mirror
-MIRRORS="ftp://carroll.aset.psu.edu/pub/linux/distributions/slackware/slackware64-current/
+# Just place them between the read line and the EOF at the end. No quotes are necessary
+read -r -d '' MIRRORS << 'EOF'
+ftp://carroll.aset.psu.edu/pub/linux/distributions/slackware/slackware64-current/
 http://carroll.aset.psu.edu/pub/linux/distributions/slackware/slackware64-current/
 ftp://ftp.gtlib.gatech.edu/nv/ao2/lxmirror/ftp.slackware.com/slackware64-current/
 ftp://ftp.osuosl.org/.2/slackware/slackware64-current/
@@ -44,7 +45,8 @@ http://slackware.virginmedia.com/slackware64-current/
 ftp://spout.ussg.indiana.edu/linux/slackware/slackware64-current/
 http://spout.ussg.indiana.edu/linux/slackware/slackware64-current/
 ftp://teewurst.cc.columbia.edu/pub/linux/slackware/slackware64-current/
-http://teewurst.cc.columbia.edu/pub/linux/slackware/slackware64-current/"
+http://teewurst.cc.columbia.edu/pub/linux/slackware/slackware64-current/
+EOF
 
 # Use any adequetly sized file to test the speed. This is ~7MB.
 # The location should be based on the relative location within
