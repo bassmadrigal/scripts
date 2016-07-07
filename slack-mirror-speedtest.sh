@@ -29,12 +29,12 @@ ftp://mirror.cs.princeton.edu/pub/mirrors/slackware/slackware64-current/
 http://mirror.metrocast.net/slackware/slackware64-current/
 ftp://mirrors.easynews.com/linux/slackware/slackware64-current/
 http://mirrors.easynews.com/linux/slackware/slackware64-current/
-http://mirrors.kingrst.com/slackware/slackware64-current/   
+http://mirrors.kingrst.com/slackware/slackware64-current/
 ftp://mirrors.us.kernel.org/slackware/slackware64-current/
 http://mirrors.us.kernel.org/slackware/slackware64-current/
 ftp://mirrors.xmission.com/slackware/slackware64-current/
 http://mirrors.xmission.com/slackware/slackware64-current/
-http://slackbuilds.org/mirror/slackware/slackware64-current/ 
+http://slackbuilds.org/mirror/slackware/slackware64-current/
 http://slackware.cs.utah.edu/pub/slackware/slackware64-current/
 http://slackware.mirrorcatalogs.com/slackware64-current/
 http://slackware.mirrors.pair.com/slackware64-current/
