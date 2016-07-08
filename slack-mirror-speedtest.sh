@@ -13,6 +13,7 @@
 #
 # Changelog
 #
+# 2016/07/07 - Updated MIRRORS variable to use EOF for easier copy/paste
 # 2016/05/28 - Added additional comments for github upload
 # 2015/11/06 - Initial release of slack-mirror-speedtest.sh
 
