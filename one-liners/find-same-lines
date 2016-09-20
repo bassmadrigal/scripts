@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#
+# By Jeremy Hansen <jebrhansen -at- gmail.com> circa 2016
+#
+# Feel free to use and abuse this "one-liner"
+#
+# This is a one-liner I found on stackexchange to find the 
+# same lines in two files, no matter their location in 
+# the file.
+# SOURCE: http://stackoverflow.com/a/17703442/2251996
+
+perl -ne 'print if ($seen{$_} .= @ARGV) =~ /10$/' $1 $2
