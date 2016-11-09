@@ -9,7 +9,9 @@
 
 # REQUIRES: mediainfo, libmediainfo (both available on SBo)
 
-find /share/videos/  -type f ! -name "*.srt" -name "*1080p*" -name "*2ch*" -print0 | while IFS= read -r -d $'\0' line; do
+MOVDIR=${MOVDIR:-/location/to/movies/}
+
+find "${MOVDIR}"  -type f ! -name "*.srt" -name "*1080p*" -name "*2ch*" -print0 | while IFS= read -r -d $'\0' line; do
 
   channels=$(/usr/bin/mediainfo "$line" | grep channels | grep 6 | egrep -v Original)
   
