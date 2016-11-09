@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+# By Jeremy Hansen <jebrhansen -at- gmail.com> circa 2015
+#
+# Feel free to use and abuse this one-liner
+#
+# I found this when I needed to split some mp4s. It doesn't require re-encoding the
+# file which makes this extremely quick (less than 5 seconds). You will need to view
+# the file and find the split point. Make note of that time. For the first split,
+# keep the -ss as 0 (if you want the beginning of the file). Then put that number
+# after the -t in HH:MM:SS format. For the second half, you put that number after
+# the -ss and remove the -t (if you don't want to split it in more than 2 files).
+
+# This won't run, but is mainly there for me to easily reference.
+
+ffmpeg -ss 00:00:00 -t 01:30:00 -i input.mp4 -acodec copy -vcodec copy output1.mp4
