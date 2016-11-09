@@ -33,6 +33,8 @@ shopt -s nullglob
 
 TVDIR=${TVDIR:-"/share/TV/ongoing/TV Shows"}
 
+echo -e "\nChecking in ======  $TVDIR  ====== directory\n"
+
 for SERIES in "$TVDIR/"*; do
   SERIES=$(basename "$SERIES")
   for SEASON in "$TVDIR/$SERIES/"*; do

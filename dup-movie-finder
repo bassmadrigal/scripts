@@ -35,6 +35,8 @@
 # (e.g. MOVDIR=/custom/location dup-movie-finder)
 MOVDIR=${MOVDIR:-/location/to/movies}
 
+echo -e "\nChecking in ======  $MOVDIR  ====== directory\n"
+
 # Clear the SECOND variable, just to prevent any passed variables breaking stuff
 SECOND=''
 
