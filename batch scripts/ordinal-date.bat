@@ -38,7 +38,6 @@ SET /a LeapYr=%Year% %% 4 + %Year% %% 100 + %Year% %% 400
  
 If /i %Month% GEQ 01 SET ORD=0
 If /i %Month% GEQ 02 SET /a ORD=%ORD%+31
-If /i %LeapYr% EQU 0 SET /a ORD=%ORD%+1
 If /i %Month% GEQ 03 SET /a ORD=%ORD%+28
 If /i %Month% GEQ 04 SET /a ORD=%ORD%+31
 If /i %Month% GEQ 05 SET /a ORD=%ORD%+30
@@ -49,6 +48,11 @@ If /i %Month% GEQ 09 SET /a ORD=%ORD%+31
 If /i %Month% GEQ 10 SET /a ORD=%ORD%+30
 If /i %Month% GEQ 11 SET /a ORD=%ORD%+31
 If /i %Month% GEQ 12 SET /a ORD=%ORD%+30
+
+:: If it is a leap year after February, add an extra day
+If /i %LeapYr% EQU 0 (
+  If /i %Month% GEQ 03 SET /a ORD=%ORD%+1
+)
  
 :: To remove the leading 0 on the day if it exists so it can add the numbers
 IF %Day:~0,1% EQU 0 SET Day=%Day:~1%
