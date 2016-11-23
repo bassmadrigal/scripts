@@ -35,40 +35,54 @@ TVDIR=${TVDIR:-"/share/TV/ongoing/TV Shows"}
 
 echo -e "\nChecking in ======  $TVDIR  ====== directory\n"
 
+# Loop through all directories in $TVDIR
 for SERIES in "$TVDIR/"*; do
+  # Store the name in $SERIES
   SERIES=$(basename "$SERIES")
+  # Loop through all seasons within a series
   for SEASON in "$TVDIR/$SERIES/"*; do
+    # Store the season folder in $SEASON
     SEASON=$(basename "$SEASON")
+    # Loop through all the episodes within a season folder
     for FIRST in "$TVDIR/$SERIES/$SEASON/"*; do
+      # Store the episode's filename
       FIRST=$(basename "$FIRST")
+      # Skip any .srt (subtitle) files to prevent false positives
       if [[ ${FIRST##*.} != "srt" ]]; then
+        # Get the SXXEXX designator
         CUR_EP=$(echo "$FIRST" | awk -F' - ' '{print $2}')
-        printf "."
-        # If the $CUR_EP variable doesn't contain SXXEXX
-        # run an unil loop and work through the sections
-        # with awk.
+        # Rudimentary progress indicator
+	printf "."
+        # If the $CUR_EP variable doesn't contain SXXEXX (typically because there's dashes
+        # in the show name), run an until loop and work through the sections with awk
         if [[ $CUR_EP != S[0-9]*E[0-9]* ]]; then
           COUNT=0
 	  REGEX="(S[0-9]*E[0-9]*)"
 	  until [[ $CUR_EP =~ $REGEX ]]; do
 	    ((COUNT++))
 	    CUR_EP=$(echo "$FIRST" | awk -F' - ' -v COUNT="$COUNT" '{print $COUNT}')
-	    # If it checks 5 fields and doesn't find it, exit the loop
+	    # If it checks 5 fields in the filename and doesn't find SXXEXX, assume the
+	    # file isn't an episode and exit the loop
 	    if [[ $COUNT == 5 ]]; then break; fi
 	  done
 	fi
+	# If $CUR_EP exists and equals the $PRE_EP, echo the names of the shows and what matched
         if [[ -n $CUR_EP && "$CUR_EP" == $PRE_EP ]]; then
           printf "\n"
           echo Repeat: $SERIES/$SEASON/$FIRST
           echo Repeat: $SERIES/$SEASON/$SECOND
           echo $CUR_EP "==" $PRE_EP
         fi
+	# Store the previous episode filename (and location)
         SECOND=$FIRST
+	# Store the previous episode designator
         PRE_EP=$CUR_EP
       fi
     done
+  # Clear these out when moving to another season to prevent false positives
   SECOND=''
   PRE_EP=''
   done
 done
+# Add a new line so the prompt comes back on its own line
 printf "\n"
