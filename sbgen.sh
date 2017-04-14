@@ -122,7 +122,6 @@ PRGNAM=$2
 VERSION=$3
 CATEGORY="$4"
 SBOUTPUT="${SBLOC}/${CATEGORY}/${PRGNAM}"
-mkdir -p $SBOUTPUT
 
 function SBintro() {
   # Let's not overwrite an existing folder unless it is forced
@@ -130,6 +129,8 @@ function SBintro() {
     echo "$SBOUTPUT already exists. To overwrite, use $(basename $0) -f"
     exit 1
   fi
+
+  mkdir -p $SBOUTPUT
 
   # Let's create the copyright header
   cat << EOF > $SBOUTPUT/$PRGNAM.SlackBuild
