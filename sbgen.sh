@@ -105,10 +105,16 @@ done
 shift $(($OPTIND - 1))
 
 # Display the help and exit if nothing is passed
-
 if [ $# -eq 0 ]; then
   help
   exit 1
+fi
+
+# Error out if two arguments aren't passed
+if [ -z $1 ] || [ -z $2 ]; then
+  echo -e "\n\tERROR: You must pass at least the program name and version.\n"
+  help
+  exit
 fi
 
 # Set the program name and version
