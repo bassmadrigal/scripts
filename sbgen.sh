@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 #
 # Copyright 2017 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
@@ -110,11 +110,13 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-# Error out if two arguments aren't passed
-if [ -z $1 ] || [ -z $2 ]; then
-  echo -e "\n\tERROR: You must pass at least the program name and version.\n"
+# Error out if three arguments aren't passed
+if [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
+  echo -e "\n\tERROR: You must pass the script type, program name, and version.\n"
   help
   exit
+elif ! [[ $1 =~ [1-7] ]]; then
+  echo -e "\n\tERROR: Invalid script type\n"; help; exit
 fi
 
 # Set the program name and version
@@ -478,7 +480,7 @@ case $1 in
       ;;
   7 ) SBextract; other; SBstrip_docs
       ;;
-  * ) echo "Invalid script type"; help; exit
+  * ) echo -e "\n\tERROR: Invalid script type\n"; help; exit
 esac
 SBclosing
 info
