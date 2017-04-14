@@ -1,0 +1,7 @@
+#TV
+
+##Normal
+/share/TV/{info.status == 'Ended' ? 'completed/cm-sorted' : 'ongoing/og-sorted'}/{n.replaceAll(/[:|?]/, "- ")}/{n.replaceAll(/[:|?]/, "- ")} - {S00E00} - {t.replaceAll(/[!?.]+$/).replaceAll(/[`´???]/, "'").replaceAll(/[:?|]/, "-").replaceAll(/[?]/, 
+"a").replaceAll(/[æ]/, "ae").replaceAll(/[à]/, "a").replaceAll(/[ø]/, "o").replaceAll(/[ó]/, "o").replaceAll(/[ñ]/, "n")}
+##Episode # padded by 3
+/share/TV/{info.status == 'Ended' ? 'completed/cm-sorted' : 'ongoing/og-sorted'}/{n.replaceAll(/[:|?]/, "- ")}/{n.replaceAll(/[:|?]/, "- ")} - S{s.pad(2)}E{es*.pad(3).join('-E')} - {t.replaceAll(/[!?.]+$/).replaceAll(/[`´???]/, "'").replaceAll(/[:?|]/, "-").replaceAll(/[?]/, "a").replaceAll(/[æ]/, "ae").replaceAll(/[à]/, "a").replaceAll(/[ø]/, "o").replaceAll(/[ó]/, "o").replaceAll(/[ñ]/, "n")}
