@@ -119,7 +119,6 @@ SBOUTPUT="${SBLOC}/${CATEGORY}/${PRGNAM}"
 mkdir -p $SBOUTPUT
 
 function SBintro() {
-
   # Let's not overwrite an existing folder unless it is forced
   if [ -e $SBOUTPUT ] && [ "${FORCE:-no}" != "yes" ]; then
     echo "$SBOUTPUT already exists. To overwrite, use $(basename $0) -f"
@@ -198,7 +197,6 @@ EOF
 }
 
 function SBextract() {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 rm -rf \$PRGNAM-\$VERSION
 tar xvf \$CWD/\$PRGNAM-\$VERSION.tar.gz
@@ -214,7 +212,6 @@ EOF
 }
 
 function SBautotools() {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
 CXXFLAGS="\$SLKCFLAGS" \\
@@ -234,7 +231,6 @@ EOF
 }
 
 function SBpython () {
-
   # This will automatically add python3 support. Please remove it if you don't want it.
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 python setup.py install --root=\$PKG
@@ -248,7 +244,6 @@ EOF
 }
 
 function SBcmake () {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 mkdir -p build
 cd build
@@ -267,7 +262,6 @@ EOF
 }
 
 function SBperl () {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 # Build method #1 (preferred)
 perl Makefile.PL \\
@@ -294,7 +288,6 @@ EOF
 }
 
 function SBhaskell () {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
 CXXFLAGS="\$SLKCFLAGS" \\
@@ -320,7 +313,6 @@ EOF
 }
 
 function SBruby () {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 
 DESTDIR=\$( ruby -r rbconfig -e '
@@ -374,7 +366,6 @@ EOF
 }
 
 function SBstrip_docs() {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 find \$PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \\
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
@@ -400,7 +391,6 @@ EOF
 }
 
 function SBclosing() {
-
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 mkdir -p $PKG/install
 cat \$CWD/slack-desc > $PKG/install/slack-desc
@@ -411,11 +401,9 @@ cd \$PKG
 EOF
 
 echo "${SBOUTPUT}/${PRGNAM}.SlackBuild was created"
-
 }
 
 function info() {
-
   cat << EOF > $SBOUTPUT/$PRGNAM.info
 PRGNAM="$PRGNAM"
 VERSION="$VERSION"
@@ -430,11 +418,9 @@ EMAIL="$EMAIL"
 EOF
 
 echo "${SBOUTPUT}/${PRGNAM}.info was created"
-
 }
 
 function slack-desc() {
-
   cat << EOF > $SBOUTPUT/slack-desc
 # HOW TO EDIT THIS FILE:
 # The "handy ruler" below makes it easier to edit a package description.
@@ -457,18 +443,15 @@ $PRGNAM:
 $PRGNAM:
 EOF
 
-echo "${SBOUTPUT}/slack-desc was created"
-
+  echo "${SBOUTPUT}/slack-desc was created"
 
   # Let's cheat and copy the use the slack-desc for the base README
   tail -n 11 $SBOUTPUT/slack-desc | sed "s/$PRGNAM://g" > $SBOUTPUT/README
 
-echo "${SBOUTPUT}/README was created"
-
+  echo "${SBOUTPUT}/README was created"
 }
 
 function other() {
-
   echo -e "# Use this for manually creating package\n" >> $SBOUTPUT/$PRGNAM.SlackBuild
 }
 
