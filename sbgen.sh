@@ -310,11 +310,11 @@ runghc Setup configure \\
 
 runghc Setup build
 runghc Setup haddock
-runghc Setup copy --destdir=$PKG
+runghc Setup copy --destdir=\$PKG
 runghc Setup register --gen-pkg-config
 
 PKGCONFD=/usr/lib\${LIBDIRSUFFIX}/ghc-\${GHC_VERSION}/package.conf.d
-PKGID=\$( grep -E "^id: " $SRCNAM-$VERSION.conf | cut -d" " -f2 )
+PKGID=\$( grep -E "^id: " \$SRCNAM-\$VERSION.conf | cut -d" " -f2 )
 mkdir -p \$PKG/\$PKGCONFD
 mv \$SRCNAM-\$VERSION.conf \$PKG/\$PKGCONFD/\$PKGID.conf
 
@@ -380,15 +380,12 @@ find \$PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | g
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 find \$PKG/usr/man -type f -exec gzip -9 {} \\;
-for i in \$( find $PKG/usr/man -type l ) ; do ln -s \$( readlink $i ).gz \$i.gz ; rm \$i ; done
+for i in \$( find \$PKG/usr/man -type l ) ; do ln -s \$( readlink $i ).gz \$i.gz ; rm \$i ; done
 
 rm -f \$PKG/usr/info/dir
 gzip -9 \$PKG/usr/info/*.info*
 
-find \$PKG -name perllocal.pod \\
-  -o -name ".packlist" \\
-  -o -name "*.bs" \\
-  | xargs rm -f
+find \$PKG -name perllocal.pod -o -name ".packlist" -o -name "*.bs" | xargs rm -f || true
 
 mkdir -p \$PKG/usr/doc/\$PRGNAM-\$VERSION
 cp -a \\
@@ -401,9 +398,9 @@ EOF
 
 function SBclosing() {
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
-mkdir -p $PKG/install
-cat \$CWD/slack-desc > $PKG/install/slack-desc
-cat \$CWD/doinst.sh > $PKG/install/doinst.sh
+mkdir -p \$PKG/install
+cat \$CWD/slack-desc > \$PKG/install/slack-desc
+cat \$CWD/doinst.sh > \$PKG/install/doinst.sh
 
 cd \$PKG
 /sbin/makepkg -l y -c n \$OUTPUT/\$PRGNAM-\$VERSION-\$ARCH-\$BUILD\$TAG.\${PKGTYPE:-tgz}
@@ -421,7 +418,7 @@ DOWNLOAD="$DOWNLOAD"
 MD5SUM="$MD5SUM"
 DOWNLOAD_x86_64="$DOWNLOAD64"
 MD5SUM_x86_64="$MD5SUM64"
-REQUIRES="$REQUIRE"
+REQUIRES="$REQUIRES"
 MAINTAINER="$NAME"
 EMAIL="$EMAIL"
 EOF
