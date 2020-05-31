@@ -47,8 +47,8 @@ for SERIES in "$TVDIR/"*; do
     for FIRST in "$TVDIR/$SERIES/$SEASON/"*; do
       # Store the episode's filename
       FIRST=$(basename "$FIRST")
-      # Skip any .srt (subtitle) files to prevent false positives
-      if [[ ${FIRST##*.} != "srt" ]]; then
+      # Skip common subtitle filetypes to prevent false positives
+      if [[ ! ${FIRST##*.} =~ ^(mpl|srt|ssa|sub)$ ]]; then
         # Get the SXXEXX designator
         CUR_EP=$(echo "$FIRST" | awk -F' - ' '{print $2}')
         # Rudimentary progress indicator
