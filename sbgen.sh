@@ -427,6 +427,10 @@ echo "${SBOUTPUT}/${PRGNAM}.info was created"
 }
 
 function slack-desc() {
+  # Get PRGNAM's character count so we can pad the handy ruler
+  PADNUM=${#PRGNAM}
+  PADDING=$(printf "%*s%s" $PADNUM)
+
   cat << EOF > $SBOUTPUT/slack-desc
 # HOW TO EDIT THIS FILE:
 # The "handy ruler" below makes it easier to edit a package description.
@@ -435,7 +439,7 @@ function slack-desc() {
 # You must make exactly 11 lines for the formatting to be correct.  It's also
 # customary to leave one space after the ':' except on otherwise blank lines.
 
-       |-----handy-ruler------------------------------------------------------|
+$PADDING|-----handy-ruler------------------------------------------------------|
 $PRGNAM: $PRGNAM (short description of app)
 $PRGNAM:
 $PRGNAM:
