@@ -31,7 +31,7 @@
 # User configurable settings. Add your information here or override when
 # running the script.
 NAME=${NAME:-Your name}
-EMAIL=${EMAIL:Your email}
+EMAIL=${EMAIL:-Your email}
 YEAR=${YEAR:-2017}
 # Location for your SlackBuild repo
 SBLOC=${SBLOC:-./slackbuilds}
