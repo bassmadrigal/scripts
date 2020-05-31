@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2017 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2017-2020 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -32,7 +32,7 @@
 # running the script.
 NAME=${NAME:-Your name}
 EMAIL=${EMAIL:-Your email}
-YEAR=${YEAR:-2017}
+YEAR=${YEAR:-$(date +%Y)}
 # Location for your SlackBuild repo
 SBLOC=${SBLOC:-./slackbuilds}
 
