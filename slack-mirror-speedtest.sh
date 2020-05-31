@@ -20,32 +20,20 @@
 # Add or change mirrors from /etc/slackpkg/mirrors as desired (these are the US mirrors)
 # Just place them between the read line and the EOF at the end. No quotes are necessary
 read -r -d '' MIRRORS << 'EOF'
-ftp://carroll.aset.psu.edu/pub/linux/distributions/slackware/slackware64-current/
-http://carroll.aset.psu.edu/pub/linux/distributions/slackware/slackware64-current/
-ftp://ftp.gtlib.gatech.edu/nv/ao2/lxmirror/ftp.slackware.com/slackware64-current/
 ftp://ftp.osuosl.org/.2/slackware/slackware64-current/
 http://ftp.osuosl.org/.2/slackware/slackware64-current/
-ftp://hpc-mirror.usc.edu/pub/linux/distributions/slackware/slackware64-current/
-http://hpc-mirror.usc.edu/pub/linux/distributions/slackware/slackware64-current/
 ftp://marmot.tn.utexas.edu/pub/slackware/slackware64-current/
 http://marmot.tn.utexas.edu/slackware/slackware64-current/
 ftp://mirror.cs.princeton.edu/pub/mirrors/slackware/slackware64-current/
-http://mirror.metrocast.net/slackware/slackware64-current/
 ftp://mirrors.easynews.com/linux/slackware/slackware64-current/
 http://mirrors.easynews.com/linux/slackware/slackware64-current/
-http://mirrors.kingrst.com/slackware/slackware64-current/
-ftp://mirrors.us.kernel.org/slackware/slackware64-current/
 http://mirrors.us.kernel.org/slackware/slackware64-current/
 ftp://mirrors.xmission.com/slackware/slackware64-current/
 http://mirrors.xmission.com/slackware/slackware64-current/
-http://slackbuilds.org/mirror/slackware/slackware64-current/
+http://mirror.slackbuilds.org/slackware/slackware64-current/
 http://slackware.cs.utah.edu/pub/slackware/slackware64-current/
-http://slackware.mirrorcatalogs.com/slackware64-current/
 http://slackware.mirrors.pair.com/slackware64-current/
-ftp://slackware.mirrors.tds.net/pub/slackware/slackware64-current/
 http://slackware.mirrors.tds.net/pub/slackware/slackware64-current/
-ftp://slackware.virginmedia.com/mirrors/ftp.slackware.com/slackware64-current/
-http://slackware.virginmedia.com/slackware64-current/
 ftp://spout.ussg.indiana.edu/linux/slackware/slackware64-current/
 http://spout.ussg.indiana.edu/linux/slackware/slackware64-current/
 ftp://teewurst.cc.columbia.edu/pub/linux/slackware/slackware64-current/
