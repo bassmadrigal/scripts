@@ -23,6 +23,15 @@
 # REQUIRES: n/wireless_tools n/wpa_supplicant
 # OPTIONAL: SBo:lshw
 
+# This script has bashisms and won't work with just sh.
+if [ "$BASH" != "/bin/bash" ] ; then
+    echo "This script requires bash due to bashisms."
+    echo "It does not support running it with 'sh' or other shells."
+    echo "Please chmod +x $0 to execute it directly or run:"
+    echo "bash $0" 1>&2
+    exit 1
+fi
+
 # Check for multiple wifi devices and, if found, prompt user which one to use
 readarray -t CHECKNUM < <(/sbin/iwconfig 2> /dev/null | /usr/bin/grep ESSID | cut -d' ' -f1)
 
@@ -52,7 +61,7 @@ if [ ${#CHECKNUM[@]} -gt 1 ]; then
   done
 
 # If there's only one device, store it
-elseif [ ${#CHECKNUM[@]} -eq 1 ]; then
+elif [ ${#CHECKNUM[@]} -eq 1 ]; then
   WIFIDEV=${CHECKNUM[0]}
 # If there's no wireless devices, let the user know
 else
