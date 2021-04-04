@@ -28,19 +28,73 @@
 # subdirectories, or you can pass a directory to the script and it will check
 # for mp4 files in that directory or subdirectories.
 
+# If an srt file exists in the folder with the same name as the mp4, you can
+# optionally add the subtitles into the resulting mkv file.
+
+# You can optionally delete the original mp4 (and srt if used).
+
 # -----------------------------------------------------------------------------
 
 # Set up the functions
 
+# Help function
+function display_help() {
+  cat <<EOH
+-- Usage:
+   $(basename $0) [options] [location]
+
+-- Option parameters:
+   -h :    This help.
+   -s :    Add subtitle of same name to resulting mkv
+   -d :    Delete the original mp4 after conversion (and remove srt if -s is used)
+
+-- Description:
+   This script is used to convert mp4 files to mkv files. It doesn't
+   transcode, it just switches the container keeping the existing codecs and
+   streams as is. It can support mp4 files in the current directory or
+   subdirectories, or you can pass a directory to the script and it will check
+   for mp4 files in that directory or subdirectories.
+
+   If an srt file exists in the folder with the same name as the mp4, you can
+   optionally add the subtitles into the resulting mkv file.
+
+   You can optionally delete the original mp4 (and srt if used).
+
+EOH
+}
+
 # The actual workhorse. Grabs the filename and removes the extension, then
 # runs it through ffmpeg to store it in an mkv container
+# Optionally add subtitles to the mkv and remove the original mp4 and srt
 convertmp42mkv()
 {
 for fullfile in *.mp4; do
   filename=$(basename "$fullfile")
   filename="${filename%.*}"
   echo -e "\e[1A\e[KConverting $fullfile to mkv"
-  ffmpeg -stats -hide_banner -loglevel quiet -i "$fullfile" -vcodec copy -acodec copy "$filename".mkv
+
+  # Only continue if it completes the conversion
+  if ffmpeg -stats -hide_banner -loglevel quiet -i "$fullfile" -vcodec copy -acodec copy "$filename".mkv; then
+
+    # Check if we should add subs (if they exist)
+    if [ "$ADDSUBS" == "yes" ] && [ -f "$filename".srt ]; then
+
+      # Only continue if it successfully adds the subtitles
+      if mkvmerge -o "${filename}"-with-sub.mkv "$fullfile" --language "0:eng" --track-name "0:eng" "$filename".srt; then
+        mv "$filename"-with-sub.mkv "$filename".mkv
+
+        # Check if we should delete the subtitle file
+        if [ "$DELETE" == "yes" ]; then
+          rm -f "$filename".srt
+        fi
+      fi
+    fi
+
+    # Check if we should delete the original mp4
+    if [ "$DELETE" == "yes" ]; then
+      rm -f "$fullfile"
+    fi
+  fi
 done
 echo
 }
@@ -63,6 +117,27 @@ loopthrufolders()
 
 # Now onto the rest of the script
 
+# Option parsing:
+while getopts "dhs" OPTION
+do
+  case $OPTION in
+
+    d )     DELETE=yes
+            ;;
+
+    h )     display_help
+            exit ;;
+
+    s )     ADDSUBS=yes
+            ;;
+
+    * )     display_help
+            exit ;;
+
+  esac
+done
+shift $(($OPTIND - 1))
+
 # Make sure we end up back where we started
 CWD=$(pwd)
 
@@ -70,12 +145,15 @@ CWD=$(pwd)
 PREFIX=
 if [ -n "$1" ]; then
   cd "$1"
+  location="$1"
+else
+  location="current"
 fi
 
 # Check for files in the main directory
 if ls ./*.mp4 >/dev/null 2>&1; then
 
-  echo -e "Converting files in current directory.\n"
+  echo -e "Converting files in $location directory.\n"
   convertmp42mkv
 
 # If no files in the main directory, check for files in subdirectories
@@ -86,11 +164,10 @@ elif ls */*.mp4 >/dev/null 2>&1; then
 # If files still can't be found, exit the script with an error
 else
 
+  echo "No mp4 files found in $location directory or its subdirectories"
+  # If a directory was passed to the script, change back to that directory.
   if [ -n "$1" ]; then
-    echo "No mp4 files found in $1 directory or its subdirectories"
     cd "$CWD"
-  else
-    echo "No mp4 files found in current directory or subdirectories"
   fi
   exit 1
 
