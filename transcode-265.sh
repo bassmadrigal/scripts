@@ -104,12 +104,12 @@ calc_time()
   # otherwise, continue the output
   if [ -z "$OUTPUT_TIME" ]; then
     if [ "$SEC" -gt 1 ]; then
-      OUTPUT_TIME="${OUTPUT_TIME}${SEC} seconds."
+      OUTPUT_TIME="${OUTPUT_TIME}${SEC} seconds"
     elif [ "$SEC" -eq 1 ]; then
-      OUTPUT_TIME="${OUTPUT_TIME}${SEC} second."
+      OUTPUT_TIME="${OUTPUT_TIME}${SEC} second"
     fi
   else
-    OUTPUT_TIME="${OUTPUT_TIME}${SEC}s."
+    OUTPUT_TIME="${OUTPUT_TIME}${SEC}s"
   fi
   echo "$OUTPUT_TIME"
   }
@@ -177,8 +177,11 @@ fi
 SECONDS=0
 COUNT=0
 TOTALCNT=0
+ORIGSIZE=0
+NEWSIZE=0
 FAILED=0
 FAILED_FILES=
+totalFrames=0
 
 # Store shopt globstar option to potentially revert
 OLD_GLOBSTAR=$(shopt -p globstar)
@@ -192,15 +195,16 @@ for FILE in "$SRC"/**; do
   # Only count if it's a video file
   if file -i "$FILE" | grep video &> /dev/null; then
     ((TOTALCNT+=1))
+    ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
   fi
 
 done
-echo "Found $TOTALCNT file(s). Starting the transcoding..."
+echo "Found $TOTALCNT file(s) totalling $(numfmt --to=iec $ORIGSIZE). Starting the transcoding..."
 sleep 4
 
 # Save the source location for easy future reference
 # (I kept forgetting which source I used when I went to delete)
-echo "$(realpath "$SRC")" > "$DEST"/000-SOURCE.txt
+realpath "$SRC" > "$DEST"/000-SOURCE.txt
 
 # Time to start looping through the directory and convert files
 for FILE in "$SRC"/**; do
@@ -218,6 +222,9 @@ for FILE in "$SRC"/**; do
   # Get just the filename without extension
   filename=$(basename "${FILE%.*}")
 
+  # Count frames so we can determine an average FPS.
+  totalFrames=$((totalFrames+$(mediainfo --Inform='Video;%FrameCount%' "$FILE")))
+
   # Set pipefail to ensure HandBrakeCLI failing works
   # This will allow a failure of HandBrakeCLI to propagate through the pipe
   # and allow the if statement to catch a failure of the HandBrakeCLI command
@@ -229,19 +236,33 @@ for FILE in "$SRC"/**; do
   if HandBrakeCLI --preset-import-gui -Z "$PRESET" -i "$FILE" -o "$DEST"/"$filename"."$EXT" 2>&1 | tee "$DEST"/temp.log; then
     ((COUNT+=1))
     rm "$DEST"/temp.log
-  # If it fails, update the fail count, save the filename to the fail log, and
-  # save the HandBrakeCLI log and echo the HandBrakeCLI command to the fail log
-  # so you can easily attempt to rerun the transcoding manually
+    NEWSIZE=$((NEWSIZE+$(du -b "$DEST"/"$filename"."$EXT" | cut -f1)))
+
+  # If it fails, try and run HandBrake a second time. Many times this will succeed
+  # when the first one failed.
   else
-    ((FAILED+=1))
-    FAILED_FILES=$("$FAILED_FILES\n$FILE")
-    {
-      echo "======$FILE======"
-      cat "$DEST"/temp.log
-      echo -e "\n======$FILE======"
-      echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
-    } >> "$DEST"/fail.log
-    rm "$DEST"/temp.log
+
+    # Sometimes handbrake just needs to be run a second time if the first time fails
+    if HandBrakeCLI --preset-import-gui -Z "$PRESET" -i "$FILE" -o "$DEST"/"$filename"."$EXT" 2>&1 | tee "$DEST"/temp.log; then
+      ((COUNT+=1))
+      rm "$DEST"/temp.log
+      NEWSIZE=$((NEWSIZE+$(du -b "$DEST"/"$filename"."$EXT" | cut -f1)))
+      echo "$FILE failed on the first run, but succeeded on the second run." >> "$DEST"/fail.log
+
+    # If it fails the second time, update the fail count, save the filename to the fail log,
+    # save the HandBrakeCLI log, and echo the HandBrakeCLI command to the fail log
+    # so you can easily attempt to rerun the transcoding manually
+    else
+      ((FAILED+=1))
+      FAILED_FILES="${FAILED_FILES}\n${FILE}"
+      {
+        echo "======$FILE======"
+        cat "$DEST"/temp.log
+        echo -e "\n======$FILE======"
+        echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
+      } >> "$DEST"/fail.log
+      rm "$DEST"/temp.log
+    fi
   fi
 
   # Only show progress if we haven't reached the end
@@ -257,10 +278,14 @@ eval "$OLD_GLOBSTAR"
 # Calculate the total time it took to transcode the files
 TOTALTIME=$(calc_time $SECONDS)
 
-if [ "$COUNT" -gt 1 ]; then
-  echo "The script finished converting $COUNT files in $TOTALTIME"
-elif [ "$COUNT" -eq 1 ]; then
-  echo"The script finished converting $COUNT file in $TOTALTIME"
+if [ "$COUNT" -ge 1 ]; then
+  echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\".
+  echo "It completed it in $TOTALTIME averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
+  echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
+  echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
+  echo "Reduced total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, saving $(numfmt --to=iec $((ORIGSIZE-NEWSIZE)))."
+# elif [ "$COUNT" -eq 1 ]; then
+#   echo"The script finished converting $COUNT file in $TOTALTIME"
 fi
 
 # If anything failed, notify which file(s) and the location for the log
