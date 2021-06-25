@@ -279,7 +279,7 @@ eval "$OLD_GLOBSTAR"
 TOTALTIME=$(calc_time $SECONDS)
 
 if [ "$COUNT" -ge 1 ]; then
-  echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\".
+  echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
   echo "It completed it in $TOTALTIME averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
   echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
   echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
