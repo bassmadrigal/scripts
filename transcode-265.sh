@@ -123,11 +123,11 @@ progress()
   EST_REMAIN_SEC=$(printf "%.0f" "$(echo "scale=10; $ELAPSED_TIME/($COMPLETED/$TOTALCNT)-$ELAPSED_TIME" | bc)")
   EST_REMAIN=$(calc_time "$EST_REMAIN_SEC")
 
-  echo "====================================================="
+  echo "==============================================================================="
   echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT files."
   echo "Remaining Time: $EST_REMAIN"
   echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')"
-  echo "====================================================="
+  echo "==============================================================================="
   echo
 
 }
@@ -182,6 +182,7 @@ NEWSIZE=0
 FAILED=0
 FAILED_FILES=
 totalFrames=0
+EXIT=
 
 # Store shopt globstar option to potentially revert
 OLD_GLOBSTAR=$(shopt -p globstar)
@@ -198,7 +199,28 @@ for FILE in "$SRC"/**; do
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
   fi
 
+  # Check for files containing non-ascii. It breaks the script (at
+  # least on 14.2).
+  if [[ "$FILE" = *[![:ascii:]]* ]]; then
+    echo "Contains Non-ASCII: $FILE"
+    # Set the exit variable so we can find and display all files containing
+    # non-ascii and then exit after the loop.
+    EXIT=yes
+  fi
+
 done
+
+# If non-ascii characters were found, warn and then exit.
+if [ -n "$EXIT" ]; then
+  echo -e "\n!=============================================================================!"
+  echo "! The above file(s) contain non-ascii characters which are not supported by   !"
+  echo "! this script. Please rename the files using only ascii characters and run    !"
+  echo "! the script again. Thanks!                                                   !"
+  echo "!=============================================================================!"
+  exit 1
+fi
+
+# If only ascii characters were found, proceed with the transcoding.
 echo "Found $TOTALCNT file(s) totalling $(numfmt --to=iec $ORIGSIZE). Starting the transcoding..."
 sleep 4
 
@@ -290,7 +312,7 @@ fi
 
 # If anything failed, notify which file(s) and the location for the log
 if [ "$FAILED" -ge 1 ]; then
-  echo -e "The following $FAILED file(s) failed to encode:$FAILED_FILES"
+  echo -e "\nThe following $FAILED file(s) failed to encode:$FAILED_FILES\n"
   echo "Please see $DEST/fail.log for more details."
   exit 2
 fi
