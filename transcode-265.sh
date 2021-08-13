@@ -248,12 +248,14 @@ for FILE in "$SRC"/**; do
   frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
   # Check and make sure $frames is set and is only a number before we try and
   # add it to totalFrames. Prevents a syntax error if $frames isn't a number.
-  if [ ! -z "${frames##*[!0-9]*}" ]; then
+  if [ -n "${frames##*[!0-9]*}" ]; then
     totalFrames=$((totalFrames+frames))
   else
-    echo "===============================================================================" >> "$DEST"/fail.log
-    echo "Could not calculate number of frames for: $FILE" >> "$DEST"/fail.log
-    echo "===============================================================================" >> "$DEST"/fail.log
+    {
+      echo "==============================================================================="
+      echo "Could not calculate number of frames for: $FILE"
+      echo "==============================================================================="
+    } >> "$DEST"/000-fail.log
   fi
 
   # Set pipefail to ensure HandBrakeCLI failing works
@@ -278,7 +280,7 @@ for FILE in "$SRC"/**; do
       ((COUNT+=1))
       rm "$DEST"/temp.log
       NEWSIZE=$((NEWSIZE+$(du -b "$DEST"/"$filename"."$EXT" | cut -f1)))
-      echo "$FILE failed on the first run, but succeeded on the second run." >> "$DEST"/fail.log
+      echo "$FILE failed on the first run, but succeeded on the second run." >> "$DEST"/000-fail.log
 
     # If it fails the second time, update the fail count, save the filename to the fail log,
     # save the HandBrakeCLI log, and echo the HandBrakeCLI command to the fail log
@@ -291,7 +293,7 @@ for FILE in "$SRC"/**; do
         cat "$DEST"/temp.log
         echo -e "\n======$FILE======"
         echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
-      } >> "$DEST"/fail.log
+      } >> "$DEST"/000-fail.log
       rm "$DEST"/temp.log
     fi
   fi
@@ -322,7 +324,7 @@ fi
 # If anything failed, notify which file(s) and the location for the log
 if [ "$FAILED" -ge 1 ]; then
   echo -e "\nThe following $FAILED file(s) failed to encode:$FAILED_FILES\n"
-  echo "Please see $DEST/fail.log for more details."
+  echo "Please see $DEST/000-fail.log for more details."
   exit 2
 fi
 
