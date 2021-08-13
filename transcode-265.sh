@@ -244,8 +244,17 @@ for FILE in "$SRC"/**; do
   # Get just the filename without extension
   filename=$(basename "${FILE%.*}")
 
-  # Count frames so we can determine an average FPS.
-  totalFrames=$((totalFrames+$(mediainfo --Inform='Video;%FrameCount%' "$FILE")))
+  # Count frames so we can determine an average transcoding FPS.
+  frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
+  # Check and make sure $frames is set and is only a number before we try and
+  # add it to totalFrames. Prevents a syntax error if $frames isn't a number.
+  if [ ! -z "${frames##*[!0-9]*}" ]; then
+    totalFrames=$((totalFrames+frames))
+  else
+    echo "===============================================================================" >> "$DEST"/fail.log
+    echo "Could not calculate number of frames for: $FILE" >> "$DEST"/fail.log
+    echo "===============================================================================" >> "$DEST"/fail.log
+  fi
 
   # Set pipefail to ensure HandBrakeCLI failing works
   # This will allow a failure of HandBrakeCLI to propagate through the pipe
