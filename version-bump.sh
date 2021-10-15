@@ -67,7 +67,7 @@ case ${DOWNLOAD}${DOWNLOAD_x86_64} in
 esac
 
 # Check for 32bit/universal download and update md5sum
-if [ "$DOWNLOAD" ]; then
+if [ "$DOWNLOAD" ] && [ "$DOWNLOAD" != "UNSUPPORTED" ]; then
 
   if wget "$DOWNLOAD"; then
     NEWMD5=$(md5sum $(basename "$DOWNLOAD") | cut -d" " -f1)
@@ -79,7 +79,7 @@ if [ "$DOWNLOAD" ]; then
 fi
 
 # Check for 64bit download and update md5sum
-if [ "$DOWNLOAD_x86_64" ]; then
+if [ "$DOWNLOAD_x86_64" ] && [ "$DOWNLOAD_x86_64" != "UNSUPPORTED" ]; then
   if wget "$DOWNLOAD_x86_64"; then
     NEWMD5x64=$(md5sum $(basename "$DOWNLOAD_x86_64") | cut -d" " -f1)
     sed -i "s|$MD5SUM_x86_64|$NEWMD5x64|" "$PRGNAM".info
