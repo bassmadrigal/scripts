@@ -40,6 +40,9 @@ DEST="$2"
 EXT="${3:-mkv}"
 PRESET="${4:-H.265 MKV 1080p Sub}"
 
+SAVESTATS="${SAVESTATS:-yes}"
+STATLOC="${STATLOC:-$HOME/.transcode-stats}"
+
 function help ()
 {
   cat <<EOH
@@ -187,6 +190,31 @@ FAILED=0
 FAILED_FILES=
 totalFrames=0
 EXIT=
+
+# Get global stats going if set
+if [ "$SAVESTATS" == "yes" ]; then
+  if [ ! -f "$STATLOC" ]; then
+    echo -n "Stats have been enabled, but $STATLOC does not exist. Would you like to create it? Y/n "
+    read -r answer
+    # If anything other than n, create the file
+    if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+      {
+        echo "PERMCNT=\"0\""
+        echo "PERMORIG=\"0\""
+        echo "PERMNEW=\"0\""
+        echo "PERMRUNS=\"0\""
+        echo "PERMSECS=\"0\""
+        echo "PERMFRAMES=\"0\""
+      } > "$STATLOC"
+      source "$STATLOC"
+    else
+      echo "Please disable stats, change stat location, or create file."
+      exit 1
+    fi
+  else
+    source "$STATLOC"
+  fi
+fi
 
 # Store shopt globstar option to potentially revert
 OLD_GLOBSTAR=$(shopt -p globstar)
@@ -348,6 +376,28 @@ done
 # Reset globstar
 eval "$OLD_GLOBSTAR"
 
+# Update global stats
+if [ "$SAVESTATS" == "yes" ]; then
+
+  # Update the variables
+  ((PERMCNT+=COUNT))
+  ((PERMORIG+=ORIGSIZE))
+  ((PERMNEW+=NEWSIZE))
+  ((PERMRUNS+=1))
+  ((PERMSECS+=SECONDS))
+  ((PERMFRAMES+=totalFrames))
+
+  # Update the file
+  {
+    echo "PERMCNT=\"$PERMCNT\""
+    echo "PERMORIG=\"$PERMORIG\""
+    echo "PERMNEW=\"$PERMNEW\""
+    echo "PERMRUNS=\"$PERMRUNS\""
+    echo "PERMSECS=\"$PERMSECS\""
+    echo "PERMFRAMES=\"$PERMFRAMES\""
+  } > "$STATLOC"
+fi
+
 # Calculate the total time it took to transcode the files
 TOTALTIME=$(calc_time $SECONDS)
 
@@ -359,6 +409,14 @@ if [ "$COUNT" -ge 1 ]; then
   echo "Reduced total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, saving $(numfmt --to=iec $((ORIGSIZE-NEWSIZE)))."
 # elif [ "$COUNT" -eq 1 ]; then
 #   echo"The script finished converting $COUNT file in $TOTALTIME"
+fi
+
+# Output global stats
+if [ "$SAVESTATS" == "yes" ]; then
+  echo "=============Global stats============="
+  echo "This script has converted $PERMCNT total files totaling $(numfmt --to=iec "$PERMORIG")."
+  echo "It has reduced the files to $(numfmt --to=iec "$PERMNEW"), saving $(numfmt --to=iec $((PERMORIG-PERMNEW))) total space."
+  echo "It has averaged $(echo "scale=2; $PERMFRAMES/$PERMSECS" | bc)fps over the course of $PERMRUNS runs."
 fi
 
 # If anything failed, notify which file(s) and the location for the log
