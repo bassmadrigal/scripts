@@ -123,12 +123,16 @@ progress()
   EST_REMAIN_SEC=$(printf "%.0f" "$(echo "scale=10; $ELAPSED_TIME/($COMPLETED/$TOTALCNT)-$ELAPSED_TIME" | bc)")
   EST_REMAIN=$(calc_time "$EST_REMAIN_SEC")
 
-  echo "==============================================================================="
-  echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT files."
-  echo "Remaining Time: $EST_REMAIN"
-  echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')"
-  echo "==============================================================================="
-  echo
+  # Let's save the ETA info to a file so it can be checked remotely, then display the file.
+  {
+    echo "==============================================================================="
+    echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT files."
+    echo "Remaining Time: $EST_REMAIN"
+    echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')"
+    echo "==============================================================================="
+    echo
+  } > "$DEST"/000-ETA
+  cat "$DEST"/000-ETA
 
 }
 
@@ -264,43 +268,79 @@ for FILE in "$SRC"/**; do
   # so it can run the else section if needed
   set -o pipefail
 
-  # Time to actually start transcoding. If it completes successfully, rm the
-  # log and update the counter
-  if HandBrakeCLI --preset-import-gui -Z "$PRESET" -i "$FILE" -o "$DEST"/"$filename"."$EXT" 2>&1 | tee "$DEST"/temp.log; then
-    ((COUNT+=1))
-    rm "$DEST"/temp.log
-    NEWSIZE=$((NEWSIZE+$(du -b "$DEST"/"$filename"."$EXT" | cut -f1)))
+  # Let's set up the encoding in a while loop. I've found that sometimes
+  # HandBrake will randomly fail. Most of the time, it will successfully
+  # complete the encoding on the second attempt, but I've had those fail and
+  # successfully complete on the third attempt. We'll now allow for the number
+  # of attempts to be configured by the user, defaulting to 5. If it fails
+  # after the set number of attempts, it will log the failure and continue with
+  # the rest of the queue.
+  while true; do
 
-  # If it fails, try and run HandBrake a second time. Many times this will succeed
-  # when the first one failed.
-  else
+    # Check to make sure file doesn't already exist (since we're dumping
+    # everything in the same directory).
+    if [ -f "$DEST"/"$filename"."$EXT" ]; then
+      FILECNT=1
+      while [ -f "${DEST}/${filename} - (${FILECNT}).${EXT}" ]; do
+        ((FILECNT+=1))
+      done
+      filename="${filename} - (${FILECNT})"
+    fi
 
-    # Sometimes handbrake just needs to be run a second time if the first time fails
-    if HandBrakeCLI --preset-import-gui -Z "$PRESET" -i "$FILE" -o "$DEST"/"$filename"."$EXT" 2>&1 | tee "$DEST"/temp.log; then
+    # Time to actually start transcoding. Capture the exit code for later
+    # analysis (if error codes are different, then I may add future functionality
+    # to adjust subsequent attempts) and increment LOOPCNT.
+    HandBrakeCLI --preset-import-gui -Z "$PRESET" -i "$FILE" -o "$DEST"/"$filename"."$EXT" 2>&1 | tee "$DEST"/temp.log
+    RETVAL=$?
+    ((LOOPCNT+=1))
+
+    # If it completed successfully, increase the count, remove the log, and
+    # update the total encoded size variable.
+    if [ "$RETVAL" -eq "0" ]; then
       ((COUNT+=1))
       rm "$DEST"/temp.log
       NEWSIZE=$((NEWSIZE+$(du -b "$DEST"/"$filename"."$EXT" | cut -f1)))
-      echo "$FILE failed on the first run, but succeeded on the second run." >> "$DEST"/000-fail.log
 
-    # If it fails the second time, update the fail count, save the filename to the fail log,
-    # save the HandBrakeCLI log, and echo the HandBrakeCLI command to the fail log
-    # so you can easily attempt to rerun the transcoding manually
+      # If this wasn't the first run, log it in 000-fail.log
+      if [ "$LOOPCNT" -gt "1" ]; then
+        echo "$FILE encode failed $((LOOPCNT-1)) time(s), but succeeded on run # $LOOPCNT." >> "$DEST"/000-fail.log
+      fi
+      # Reset LOOPCNT and exit the loop if successful
+      LOOPCNT=0
+      break
     else
-      ((FAILED+=1))
-      FAILED_FILES="${FAILED_FILES}\n${FILE}"
-      {
-        echo "======$FILE======"
-        cat "$DEST"/temp.log
-        echo -e "\n======$FILE======"
-        echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
-      } >> "$DEST"/000-fail.log
-      rm "$DEST"/temp.log
+      echo "$FILE encode failed on run # $LOOPCNT with an exit code of \"$RETVAL\"." >> "$DEST"/000-fail.log
+      rm "$DEST"/"$filename"."$EXT"
+
+      # If we've hit our limit, update the fail count, save the filename to
+      # the fail log, save the HandBrakeCLI log, and echo the HandBrakeCLI
+      # command to the fail log so you can easily attempt to rerun the
+      # transcoding manually
+      if [ "$LOOPCNT" -eq "$ATTEMPTS" ]; then
+        ((FAILED+=1))
+        FAILED_FILES="${FAILED_FILES}\n${FILE}"
+        {
+          echo "======================$FILE======================"
+          cat "$DEST"/temp.log
+          echo -e "\n======================$FILE======================"
+          echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
+        } >> "$DEST"/000-fail.log
+        rm "$DEST"/temp.log
+        # Save all the commands separately as well to output them on script exit
+        FAILEDCMD="${FAILEDCMD}\nHandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
+
+        break
+      fi
+      continue
     fi
-  fi
+  done
 
   # Only show progress if we haven't reached the end
+  # If we've reached the end, delete the 000-ETA file
   if ((COUNT+FAILED < TOTALCNT)); then
     progress $SECONDS
+  else
+    rm "$DEST"/000-ETA
   fi
 
 done
@@ -325,6 +365,8 @@ fi
 if [ "$FAILED" -ge 1 ]; then
   echo -e "\nThe following $FAILED file(s) failed to encode:$FAILED_FILES\n"
   echo "Please see $DEST/000-fail.log for more details."
+  echo "These are the transcoding commands for the failed files to manually run: "
+  echo -e "$FAILEDCMD"
   exit 2
 fi
 
