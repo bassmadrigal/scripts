@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 #
 # Copyright 2016 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
@@ -42,7 +42,8 @@ SECOND=''
 
 for FIRST in "$MOVDIR/"*; do
   MOVNAME=$(echo "$FIRST" | awk -F'(' '{print $1}')
-  if [[ $MOVNAME == $(echo "$SECOND" | awk -F'(' '{print $1}') ]]; then
+  MOVYEAR=$(echo "$FIRST" | cut -d "(" -f2 | cut -d ")" -f1)
+  if [[ $MOVNAME == $(echo "$SECOND" | awk -F'(' '{print $1}') && $MOVYEAR == $(echo "$SECOND" | cut -d "(" -f2 | cut -d ")" -f1) ]]; then
     echo "$FIRST"
     echo "$SECOND"
   fi
