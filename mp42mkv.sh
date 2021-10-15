@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2020 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2020-2021 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -77,15 +77,20 @@ for fullfile in *.mp4; do
   if ffmpeg -stats -hide_banner -loglevel quiet -i "$fullfile" -vcodec copy -acodec copy "$filename".mkv; then
 
     # Check if we should add subs (if they exist)
-    if [ "$ADDSUBS" == "yes" ] && [ -f "$filename".srt ]; then
+    if [ "$ADDSUBS" == "yes" ] && [ -f "$filename"*.srt ]; then
+
+      # If there's more than 1 sub file, skip adding them.
+      if [ "$(ls "$filename"*.srt | wc -l)" -gt "1" ]; then
+        continue
+      fi
 
       # Only continue if it successfully adds the subtitles
-      if mkvmerge -o "${filename}"-with-sub.mkv "$fullfile" --language "0:eng" --track-name "0:eng" "$filename".srt; then
+      if mkvmerge -o "${filename}"-with-sub.mkv "$fullfile" --language "0:eng" --track-name "0:eng" "$filename"*.srt; then
         mv "$filename"-with-sub.mkv "$filename".mkv
 
         # Check if we should delete the subtitle file
         if [ "$DELETE" == "yes" ]; then
-          rm -f "$filename".srt
+          rm -f "$filename"*.srt
         fi
       fi
     fi
