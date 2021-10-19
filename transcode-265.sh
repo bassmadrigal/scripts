@@ -191,22 +191,22 @@ fi
 
 # Check to see if they passed source and destination locations
 if [ -z "$SRC" ] || [ -z "$DEST" ]; then
-  echo "$(basename "$0") requires passing the source and destination directories"
+  echo -e "\n!!ERROR!!\n$(basename "$0") requires passing the source and destination directories\n"
   help
   exit 1
 fi
 
 # Check to see if the source directory exists
 if [ ! -d "$SRC" ]; then
-  echo "$SRC does not exist or you don't have permission to access it."
+  echo -e "\n!!ERROR!!\n$SRC does not exist or you don't have permission to access it.\n"
   help
   exit 1
 fi
 
 # Try to create the destination directory
 if ! mkdir -p "$DEST"; then
-  echo "Failed to create the \"$DEST\"."
-  echo "Do you have proper permissions?"
+  echo -e "\n!!ERROR!!\nFailed to create the \"$DEST\"."
+  echo -e "Do you have proper permissions?\n"
   help
   exit 1
 fi
@@ -215,14 +215,14 @@ fi
 EXT=${EXT,,}
 # Make sure the extension is either mkv or mp4
 if [ "$EXT" != "mkv" ] && [ "$EXT" != "mp4" ]; then
-  echo "$3 is not a valid extension. Please choose \"mp4\" or \"mkv\"."
+  echo -e "\n!!ERROR!!\n$3 is not a valid extension. Please choose \"mp4\" or \"mkv\".\n"
   help
   exit 1
 fi
 
 # Make sure the HandBrake preset exists.
 if ! HandBrakeCLI --preset-import-gui -z 2>&1 >/dev/null | grep -q "$PRESET"; then
-  echo "\"$PRESET\" is not a valid HandBrake preset."
+  echo -e "\n!!ERROR!!\n\"$PRESET\" is not a valid HandBrake preset.\n"
   sleep 3
   HandBrakeCLI --preset-import-gui -z
   exit 1
