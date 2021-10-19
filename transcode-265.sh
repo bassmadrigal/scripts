@@ -248,10 +248,12 @@ shopt -s globstar
 echo "Finding total filecount. Please wait..."
 for FILE in "$SRC"/**; do
 
-  # Only count if it's a video file
+  # Only count and check if it's a video file
   if file -i "$FILE" | grep video &> /dev/null; then
     ((TOTALCNT+=1))
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
+  else
+    continue
   fi
 
   # Check for files containing non-ascii. It breaks the script (at
