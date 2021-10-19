@@ -67,7 +67,14 @@ function help ()
    File extension and preset can be pre-configured within the script, but can
    be passed if you want to override the presets.
 
+   If global stats are enabled (SAVESTATS=yes), then they will be displayed at
+   the bottom of the help output or when transcoding is complete. Save file
+   defaults to ~/.transcode-stats, but can be moved to a global location if
+   being used for multiple users.
+
 EOH
+  # Check if stats are enabled and print
+  print_global_stats
 }
 
 # Function to calculate the amount weeks, days, hours, minutes, and seconds
@@ -139,6 +146,47 @@ progress()
 
 }
 
+print_global_stats()
+{
+  if [ "$SAVESTATS" == "yes" ] && [ "$PERMRUNS" -gt "0" ]; then
+    echo -e "\n==============================Global stats=============================="
+    echo "This script has converted $PERMCNT total files over the course of $PERMRUNS runs."
+    echo "It has run a total of $(calc_time "$PERMSECS") averaging $(echo "scale=2; $PERMFRAMES/$PERMSECS" | bc)fps."
+    echo "Initial total size: $(numfmt --to=iec "$PERMORIG")"
+    echo "Transcoded total size: $(numfmt --to=iec "$PERMNEW")"
+    echo "Reduced the total size by $(echo "100-(100*$PERMNEW/$PERMORIG)" | bc)%, saving $(numfmt --to=iec $((PERMORIG-PERMNEW))) total space."
+    echo "Average intial filesize of $(numfmt --to=iec $((PERMORIG/PERMCNT))) reduced to $(numfmt --to=iec $((PERMNEW/PERMCNT))) after transcoding."
+    echo "========================================================================"
+  elif [ "$SAVESTATS" == "yes" ] && [ "$PERMRUNS" -eq "0" ]; then
+    echo "No stats are available yet. Please check $STATLOC or transcode some files."
+  fi
+}
+
+# Get global stats going if set
+if [ "$SAVESTATS" == "yes" ]; then
+  if [ ! -f "$STATLOC" ]; then
+    echo -n "Stats have been enabled, but $STATLOC does not exist. Would you like to create it? Y/n "
+    read -r answer
+    # If anything other than n, create the file
+    if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+      {
+        echo "PERMCNT=\"0\""
+        echo "PERMORIG=\"0\""
+        echo "PERMNEW=\"0\""
+        echo "PERMRUNS=\"0\""
+        echo "PERMSECS=\"0\""
+        echo "PERMFRAMES=\"0\""
+      } > "$STATLOC"
+      source "$STATLOC"
+    else
+      echo "Please disable stats, change stat location, or create file."
+      exit 1
+    fi
+  else
+    source "$STATLOC"
+  fi
+fi
+
 # Time to check our inputs
 
 # Check to see if they passed source and destination locations
@@ -190,31 +238,6 @@ FAILED=0
 FAILED_FILES=
 totalFrames=0
 EXIT=
-
-# Get global stats going if set
-if [ "$SAVESTATS" == "yes" ]; then
-  if [ ! -f "$STATLOC" ]; then
-    echo -n "Stats have been enabled, but $STATLOC does not exist. Would you like to create it? Y/n "
-    read -r answer
-    # If anything other than n, create the file
-    if ! /usr/bin/grep -qi "n" <<< "$answer"; then
-      {
-        echo "PERMCNT=\"0\""
-        echo "PERMORIG=\"0\""
-        echo "PERMNEW=\"0\""
-        echo "PERMRUNS=\"0\""
-        echo "PERMSECS=\"0\""
-        echo "PERMFRAMES=\"0\""
-      } > "$STATLOC"
-      source "$STATLOC"
-    else
-      echo "Please disable stats, change stat location, or create file."
-      exit 1
-    fi
-  else
-    source "$STATLOC"
-  fi
-fi
 
 # Store shopt globstar option to potentially revert
 OLD_GLOBSTAR=$(shopt -p globstar)
@@ -407,16 +430,8 @@ if [ "$COUNT" -ge 1 ]; then
   echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
   echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
   echo "Reduced total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, saving $(numfmt --to=iec $((ORIGSIZE-NEWSIZE)))."
-# elif [ "$COUNT" -eq 1 ]; then
-#   echo"The script finished converting $COUNT file in $TOTALTIME"
-fi
-
-# Output global stats
-if [ "$SAVESTATS" == "yes" ]; then
-  echo "=============Global stats============="
-  echo "This script has converted $PERMCNT total files totaling $(numfmt --to=iec "$PERMORIG")."
-  echo "It has reduced the files to $(numfmt --to=iec "$PERMNEW"), saving $(numfmt --to=iec $((PERMORIG-PERMNEW))) total space."
-  echo "It has averaged $(echo "scale=2; $PERMFRAMES/$PERMSECS" | bc)fps over the course of $PERMRUNS runs."
+  # Check if stats are enabled and print
+  print_global_stats
 fi
 
 # If anything failed, notify which file(s) and the location for the log
