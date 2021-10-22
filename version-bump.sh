@@ -25,7 +25,7 @@
 # Make sure the version number is passed to the script or exit
 if [ -z "$1" ]; then
   echo "Please pass the new version number as an argument."
-  echo "$(basename $0) <version>"
+  echo "$(basename "$0") <version>"
   exit 1
 else
   NEWVER="$1"
@@ -44,7 +44,7 @@ fi
 
 # Change the version in the .info and .SlackBuild
 if [ "$VERSION" != "$NEWVER" ]; then
-  echo "Changing $PRGNAM's version from $VERSION to $NEWVER"
+  echo "Changing $PRGNAM's version from $VERSION to $NEWVER."
   sed -i "s/$VERSION/$NEWVER/g" "$PRGNAM".info "$PRGNAM".SlackBuild
 else
   echo "Looks like you're trying to change it to the same version."
@@ -54,37 +54,80 @@ else
 fi
 
 # Reset the build number since version was changed
+echo "Resetting the build number."
 sed -i 's|${BUILD:-.*}|${BUILD:-1}|' "$PRGNAM".SlackBuild
 
 # Source the updated .info so we can check the downloads
 . "$PRGNAM".info
 
-# Don't try and update md5sums for multiple downloads
-case ${DOWNLOAD}${DOWNLOAD_x86_64} in
-  *\ * ) echo "This does not support updating MD5 hashes for multiple downloads."
-         echo "Please update MD5 hashes manually."
-         exit 1;;
-esac
-
+# Time to download files if they aren't already available and generate
+# MD5SUMs. Supports both single and multiple downloads.
+echo "Checking downloads and generating MD5SUMs."
+NEWMD5=""
 # Check for 32bit/universal download and update md5sum
 if [ "$DOWNLOAD" ] && [ "$DOWNLOAD" != "UNSUPPORTED" ]; then
 
-  if wget "$DOWNLOAD"; then
-    NEWMD5=$(md5sum $(basename "$DOWNLOAD") | cut -d" " -f1)
-    sed -i "s|$MD5SUM|$NEWMD5|" "$PRGNAM".info
-  else
-    echo "Download failed. Please check and try again manually."
-    exit 1
-  fi
+  # Loop through the download list
+  for i in $DOWNLOAD; do
+    # Download if the file doesn't already exist
+    if [ ! -f "$(basename "$i")" ]; then
+      if ! wget "$i"; then
+        echo "Download for $i failed. Please check link and update manually."
+        exit 1
+      fi
+    else
+      echo "File already exists. Won't redownload."
+    fi
+    # If it's the first file, set the variable, otherwise, add to it
+    if [ -z "$NEWMD5" ]; then
+      NEWMD5="$(md5sum "$(basename "$i")" | cut -d" " -f1)"
+    else
+      NEWMD5="$NEWMD5 $(md5sum "$(basename "$i")" | cut -d" " -f1)"
+    fi
+  done
 fi
 
-# Check for 64bit download and update md5sum
+NEWMD5x64=""
+# Check for 32bit/universal download and update md5sum
 if [ "$DOWNLOAD_x86_64" ] && [ "$DOWNLOAD_x86_64" != "UNSUPPORTED" ]; then
-  if wget "$DOWNLOAD_x86_64"; then
-    NEWMD5x64=$(md5sum $(basename "$DOWNLOAD_x86_64") | cut -d" " -f1)
-    sed -i "s|$MD5SUM_x86_64|$NEWMD5x64|" "$PRGNAM".info
-  else
-    echo "Download failed. Please check and try again manually."
-    exit 1
-  fi
+
+  # Loop through the download list
+  for i in $DOWNLOAD_x86_64; do
+    # Download if the file doesn't already exist
+    if [ ! -f "$(basename "$i")" ]; then
+      if ! wget "$i"; then
+        echo "Download for $i failed. Please check link and update manually."
+        exit 1
+      fi
+    else
+      echo "File already exists. Won't redownload."
+    fi
+    # If it's the first file, set the variable, otherwise, add to it
+    if [ -z "$NEWMD5x64" ]; then
+      NEWMD5x64="$(md5sum "$(basename "$i")" | cut -d" " -f1)"
+    else
+      NEWMD5x64="$NEWMD5x64 $(md5sum "$(basename "$i")" | cut -d" " -f1)"
+    fi
+  done
 fi
+
+# Couldn't figure out how to keep the newlines in the updated MD5SUM
+# variables, so figured we could just brute force it. Easy peasy.
+{
+  echo "PRGNAM=\"$PRGNAM\""
+  echo "VERSION=\"$VERSION\""
+  echo "HOMEPAGE=\"$HOMEPAGE\""
+  echo "DOWNLOAD=\"$DOWNLOAD\""
+  echo "MD5SUM=\"$NEWMD5\""
+  echo "DOWNLOAD_x86_64=\"$DOWNLOAD_x86_64\""
+  echo "MD5SUM_x86_64=\"$NEWMD5x64\""
+  echo "REQUIRES=\"$REQUIRES\""
+  echo "MAINTAINER=\"$MAINTAINER\""
+  echo "EMAIL=\"$EMAIL\""
+} > "$PRGNAM".info
+
+# Switch all spaces to newlines to match SBo's .info template
+# Skip the REQUIRES, MAINTAINER, and EMAIL lines
+sed -Ei '/(REQUIRES|MAINTAINER|EMAIL)/!s| | \\\n|g' "$PRGNAM".info
+
+echo "Success! $PRGNAM was updated to version $VERSION."
