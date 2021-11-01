@@ -454,7 +454,7 @@ elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
   print_global_stats
 
   # Make sure they see that files are bigger.
-  echo "====$(basename $0) failed to transcode files smaller than the original.===="
+  echo "====$(basename "$0") failed to transcode files smaller than the original.===="
   echo -e "File size \e[33mincreased\e[0m $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)% adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
   echo -e "Please consider using the original files and discarding the transcoded files."
 
