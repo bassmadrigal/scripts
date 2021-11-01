@@ -238,6 +238,7 @@ FAILED=0
 FAILED_FILES=
 totalFrames=0
 EXIT=
+ATTEMPTS=10
 
 # Store shopt globstar option to potentially revert
 OLD_GLOBSTAR=$(shopt -p globstar)
@@ -363,7 +364,10 @@ for FILE in "$SRC"/**; do
       break
     else
       echo "$FILE encode failed on run # $LOOPCNT with an exit code of \"$RETVAL\"." >> "$DEST"/000-fail.log
-      rm "$DEST"/"$filename"."$EXT"
+
+      # If a partially transcoded file exists, delete it so the next round
+      # can run without trying to duplicate it
+      [ -f "$DEST"/"$filename"."$EXT" ] && rm "$DEST"/"$filename"."$EXT"
 
       # If we've hit our limit, update the fail count, save the filename to
       # the fail log, save the HandBrakeCLI log, and echo the HandBrakeCLI
@@ -373,14 +377,17 @@ for FILE in "$SRC"/**; do
         ((FAILED+=1))
         FAILED_FILES="${FAILED_FILES}\n${FILE}"
         {
-          echo "======================$FILE======================"
+          echo "=============$FILE failed $ATTEMPTS time(s)============="
           cat "$DEST"/temp.log
-          echo -e "\n======================$FILE======================"
           echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
+          echo -e "\n======================$FILE======================\n"
         } >> "$DEST"/000-fail.log
         rm "$DEST"/temp.log
         # Save all the commands separately as well to output them on script exit
         FAILEDCMD="${FAILEDCMD}\nHandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
+
+        # Reset LOOPCNT and exit the loop if attempts have been reached
+        LOOPCNT=0
 
         break
       fi
