@@ -43,6 +43,8 @@ PRESET="${4:-H.265 MKV 1080p Sub}"
 SAVESTATS="${SAVESTATS:-yes}"
 STATLOC="${STATLOC:-$HOME/.transcode-stats}"
 
+MERGESUBS="${MERGESUBS:-yes}"
+
 function help ()
 {
   cat <<EOH
@@ -71,6 +73,10 @@ function help ()
    the bottom of the help output or when transcoding is complete. Save file
    defaults to ~/.transcode-stats, but can be moved to a global location if
    being used for multiple users.
+
+   Subtitle files (srt only for now) are detected and the user is prompted on
+   if they'd like merge them into the resulting mkv (doesn't currently work on
+   mp4 output) if they can be matched to the correct video.
 
 EOH
   # Check if stats are enabled and print
@@ -156,11 +162,25 @@ print_global_stats()
     echo "Transcoded total size: $(numfmt --to=iec "$PERMNEW")"
     echo "Reduced the total size by $(echo "100-(100*$PERMNEW/$PERMORIG)" | bc)%, saving $(numfmt --to=iec -- $((PERMORIG-PERMNEW))) total space."
     echo "Average intial filesize of $(numfmt --to=iec -- $((PERMORIG/PERMCNT))) reduced to $(numfmt --to=iec -- $((PERMNEW/PERMCNT))) after transcoding."
+    echo "Added $PERMSUBS subtitle files into videos."
     echo "========================================================================"
   elif [ "$SAVESTATS" == "yes" ] && [ "$PERMRUNS" -eq "0" ]; then
     echo "No stats are available yet. Please check $STATLOC or transcode some files."
   fi
 }
+
+# mp4 extensions don't support our method of importing subs. They need to be
+# specially added using mov_text, which is very limited. This is not currently
+# supported as I prefer mkv files (but support may be added later).
+# Notify the user adding subs isn't supported with the mp4 extension and
+# continue with MERGESUBS disabled.
+if [ "$EXT" == "mp4" ] && [ "$MERGESUBS" == "yes" ]; then
+  echo "Adding subtitles to MP4 files is not currently supported."
+  echo "Either Ctrl+C and change options or wait 5 seconds and the script"
+  echo "will continue with using the mp4 extension without merging subs."
+  sleep 5
+  MERGESUBS="no"
+fi
 
 # Get global stats going if set
 if [ "$SAVESTATS" == "yes" ]; then
@@ -176,6 +196,7 @@ if [ "$SAVESTATS" == "yes" ]; then
         echo "PERMRUNS=\"0\""
         echo "PERMSECS=\"0\""
         echo "PERMFRAMES=\"0\""
+        echo "PERMSUBS=\"0\""
       } > "$STATLOC"
       source "$STATLOC"
     else
@@ -239,6 +260,8 @@ FAILED_FILES=
 totalFrames=0
 EXIT=
 ATTEMPTS=10
+SUBCOUNT=0
+SUBSADDED=0
 
 # Store shopt globstar option to potentially revert
 OLD_GLOBSTAR=$(shopt -p globstar)
@@ -253,6 +276,12 @@ for FILE in "$SRC"/**; do
   if file -i "$FILE" | grep video &> /dev/null; then
     ((TOTALCNT+=1))
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
+  # But, if it's a subtitle, count it separately to present to the user.
+  elif [ "${FILE##*.}" == "srt" ] && [ "$MERGESUBS" == "yes" ]; then
+    #if [ -f "$(echo "${FILE%.*}".* | grep -v \\.srt$)" ]; then
+    #if find . -name "$(basename "${FILE%.*}")"* -not -name "*.srt" > /dev/null 2>&1; then
+      ((SUBCOUNT+=1))
+    #fi
   else
     continue
   fi
@@ -278,6 +307,22 @@ if [ -n "$EXIT" ]; then
   exit 1
 fi
 
+# If subs were found, present the option to try and merge them.
+if [ "$SUBCOUNT" -ge "1" ]; then
+  echo -e "\n!===========================================================================!"
+  echo "$SUBCOUNT subtitle file(s) were found for $TOTALCNT video files."
+  echo -n "Would you like to add the subtitles into the video if a match is found? Y/n "
+  read -r answer
+  # If anything other than n, set SUBS to yes
+  if grep -qi "n" <<< "$answer"; then
+    echo "Subs will not be added. If desired, please move subtitles manually once"
+    echo "transcoding is finished."
+  else
+    echo -e "Subs will be added to files during transcoding.\n"
+    SUBS="yes"
+  fi
+fi
+
 # If only ascii characters were found, proceed with the transcoding.
 echo "Found $TOTALCNT file(s) totalling $(numfmt --to=iec $ORIGSIZE). Starting the transcoding..."
 sleep 4
@@ -299,8 +344,43 @@ for FILE in "$SRC"/**; do
     continue
   fi
 
-  # Get just the filename without extension
+  # Get just the filename without extension and current dir
   filename=$(basename "${FILE%.*}")
+  fileDIR=$(realpath "$(dirname "$FILE")")
+
+  SUBCMD=""
+  SUBFILE=""
+  # If we're merging subs, let's try to find the subtitle file
+  if [ "$SUBS" == "yes" ]; then
+
+    # If the file exists in the same directory with the same name, use it
+    if [ -f "${FILE%.*}".srt ]; then
+      SUBFILE="${FILE%.*}".srt
+
+
+    # If there is a Subs/ directory, let's check in there
+    elif [ -d "$fileDIR"/Subs ]; then
+
+      # Check in a directory with the same name as the episode
+       if [ "$(ls "$fileDIR"/Subs/"$filename"/*English.srt | wc -l)" -ge "1" ]; then
+         SUBFILE="$(ls -S "$fileDIR"/Subs/"$filename"/*English.srt | head -n1)"
+       fi
+
+    # May add more entries later if needed based on other directory/subtitle
+    # structures I encounter
+
+    fi
+
+    # If the above was successful, alter the HandBrake command to include subtitles
+    # We need to store the command in an array due to bash limitations of storing
+    # commands in variables.
+    # See https://github.com/koalaman/shellcheck/wiki/SC2089 for more details
+    if [ -n "$SUBFILE" ]; then
+      SUBCMD=(--srt-lang=eng --srt-file=\""$SUBFILE"\")
+      ((SUBSADDED+=1))
+    fi
+
+  fi
 
   # Count frames so we can determine an average transcoding FPS.
   frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
@@ -344,7 +424,7 @@ for FILE in "$SRC"/**; do
     # Time to actually start transcoding. Capture the exit code for later
     # analysis (if error codes are different, then I may add future functionality
     # to adjust subsequent attempts) and increment LOOPCNT.
-    HandBrakeCLI --preset-import-gui -Z "$PRESET" -i "$FILE" -o "$DEST"/"$filename"."$EXT" 2>&1 | tee "$DEST"/temp.log
+    HandBrakeCLI --preset-import-gui -Z "$PRESET" -i "$FILE" "${SUBCMD[@]}" -o "$DEST"/"$filename"."$EXT" 2>&1 | tee "$DEST"/temp.log
     RETVAL=$?
     ((LOOPCNT+=1))
 
@@ -379,12 +459,12 @@ for FILE in "$SRC"/**; do
         {
           echo "=============$FILE failed $ATTEMPTS time(s)============="
           cat "$DEST"/temp.log
-          echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
+          echo "HandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" " "${SUBCMD[@]}" " -o \"$DEST\"/\"$filename\".\"$EXT\""
           echo -e "\n======================$FILE======================\n"
         } >> "$DEST"/000-fail.log
         rm "$DEST"/temp.log
         # Save all the commands separately as well to output them on script exit
-        FAILEDCMD="${FAILEDCMD}\nHandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" -o \"$DEST\"/\"$filename\".\"$EXT\""
+        FAILEDCMD="${FAILEDCMD}\nHandBrakeCLI --preset-import-gui -Z \"$PRESET\" -i \"$FILE\" \"${SUBCMD[*]}\" -o \"$DEST\"/\"$filename\".\"$EXT\""
 
         # Reset LOOPCNT and exit the loop if attempts have been reached
         LOOPCNT=0
@@ -423,6 +503,7 @@ if [ "$SAVESTATS" == "yes" ]; then
   ((PERMRUNS+=1))
   ((PERMSECS+=SECONDS))
   ((PERMFRAMES+=totalFrames))
+  ((PERMSUBS+=SUBSADDED))
 
   # Update the file
   {
@@ -432,6 +513,7 @@ if [ "$SAVESTATS" == "yes" ]; then
     echo "PERMRUNS=\"$PERMRUNS\""
     echo "PERMSECS=\"$PERMSECS\""
     echo "PERMFRAMES=\"$PERMFRAMES\""
+    echo "PERMSUBS=\"$PERMSUBS\""
   } > "$STATLOC"
 fi
 
@@ -450,7 +532,10 @@ if [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -lt "$ORIGSIZE" ]; then
     echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
     echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
     echo "Reduced total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, saving $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
-  } > "$DEST"/000-stats
+    if [ $SUBSADDED -ge "1" ]; then
+      echo "Added $SUBSADDED subtitle files into videos."
+    fi
+  } >> "$DEST"/000-stats
   cat "$DEST"/000-stats
 elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
   # Check if stats are enabled and print
@@ -470,7 +555,10 @@ elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
     echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
     echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
     echo "Increased total size by $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)%, adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
-  } > "$DEST"/000-stats
+    if [ $SUBSADDED -ge "1" ]; then
+      echo "Added $SUBSADDED subtitle files into videos."
+    fi
+  } >> "$DEST"/000-stats
   cat "$DEST"/000-stats
 fi
 
