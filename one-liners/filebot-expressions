@@ -1,7 +1,5 @@
-#TV
-
-##Normal
-/share/TV/{info.status == 'Ended' ? 'completed/cm-sorted' : 'ongoing/og-sorted'}/{n.replaceAll(/[:|?]/, "- ")}/{n.replaceAll(/[:|?]/, "- ")} - {S00E00} - {t.replaceAll(/[!?.]+$/).replaceAll(/[`�???]/, "'").replaceAll(/[:?|]/, "-").replaceAll(/[?]/, 
-"a").replaceAll(/[�]/, "ae").replaceAll(/[�]/, "a").replaceAll(/[�]/, "o").replaceAll(/[�]/, "o").replaceAll(/[�]/, "n")}
-##Episode # padded by 3
-/share/TV/{info.status == 'Ended' ? 'completed/cm-sorted' : 'ongoing/og-sorted'}/{n.replaceAll(/[:|?]/, "- ")}/{n.replaceAll(/[:|?]/, "- ")} - S{s.pad(2)}E{es*.pad(3).join('-E')} - {t.replaceAll(/[!?.]+$/).replaceAll(/[`�???]/, "'").replaceAll(/[:?|]/, "-").replaceAll(/[?]/, "a").replaceAll(/[�]/, "ae").replaceAll(/[�]/, "a").replaceAll(/[�]/, "o").replaceAll(/[�]/, "o").replaceAll(/[�]/, "n")}
+# Movie
+/share/movies/{any{ info.certifications.US }{ 'No Certification' } ==~ 'R|NR' ? 'mv-sorted-R' : 'mv-sorted'}/{n.replaceAll(/:/, "- ").replaceAll(/—/, " - ").replaceAll(/’/, "'").replaceAll(/é/, "e").replaceAll(/à/, "a").replaceAll(/…/, "...").replaceAll(/³/, "3")} ({y}) {tags} {source} {vf} {vc} {af} {ac} {" - ($group)"}/{n.replaceAll(/:/, "- ").replaceAll(/—/, " - ").replaceAll(/’/, "'").replaceAll(/é/, "e").replaceAll(/à/, "a").replaceAll(/…/, "...").replaceAll(/³/, "3")} ({y}) {tags} {source} {vf} {vc} {af} {ac} {" - ($group)"}
+# TV
+## Autodetect padding for season
+/share/tv/{info.genres.contains('Documentary') ? 'documentary/doc-sorted' : {info.status == 'Ended' ? 'completed/cm-sorted' : 'ongoing/og-sorted'}}/{n.replaceAll(/é/, "e").replaceAll(/[:|]/, "- ")}/{n.replaceAll(/é/, "e").replaceAll(/[:|]/, "- ")} - Season {regular ? {sc >= 10 ? s.pad(2) : s} : {sc >= 10 ? '00' : '0'}}/{n.replaceAll(/é/, "e").replaceAll(/[:|]/, "- ")} - {S00E00} - {t.replaceAll(/[!?.]+$/).replaceAll(/[‘’]/, "'").replaceAll(/[:|]/, "- ").replaceAll(/–/, " - ").replaceAll(/…/, "...").removeAll("\\?").replaceAll(/[áà]/, "a").replaceAll(/é/, "e").replaceAll(/Œ/, "Oe").replaceAll(/[ôō]/, "o").removeAll("“")}
