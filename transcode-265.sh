@@ -413,6 +413,9 @@ eval "$OLD_GLOBSTAR"
 # Update global stats
 if [ "$SAVESTATS" == "yes" ]; then
 
+  # Source the stats again in case multiple instances were ran simultaneously
+  source "$STATLOC"
+
   # Update the variables
   ((PERMCNT+=COUNT))
   ((PERMORIG+=ORIGSIZE))
