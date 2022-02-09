@@ -476,6 +476,7 @@ fi
 
 # If anything failed, notify which file(s) and the location for the log
 if [ "$FAILED" -ge 1 ]; then
+  echo -e "$FAILEDCMD" >> "$DEST"/000-fail.log
   echo -e "\nThe following $FAILED file(s) failed to encode:$FAILED_FILES\n"
   echo "Please see $DEST/000-fail.log for more details."
   echo "These are the transcoding commands for the failed files to manually run: "
