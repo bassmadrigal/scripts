@@ -40,8 +40,11 @@ DEST="$2"
 EXT="${3:-mkv}"
 PRESET="${4:-H.265 MKV 1080p Sub}"
 
+SAVEFOL="${SAVEFOL:-$HOME/.transcode}"
 SAVESTATS="${SAVESTATS:-yes}"
-STATLOC="${STATLOC:-$HOME/.transcode-stats}"
+STATLOC="${STATLOC:-$SAVEFOL/transcode-stats}"
+SAVEHIST="${SAVEHIST:-yes}"
+HISTLOC="${HISTLOC:-$SAVEFOL/transcode-history}"
 
 MERGESUBS="${MERGESUBS:-yes}"
 
@@ -249,6 +252,35 @@ if ! HandBrakeCLI --preset-import-gui -z 2>&1 >/dev/null | grep -q "$PRESET"; th
   exit 1
 fi
 
+# Check that the folder exists and is writeable.
+if [ "$SAVESTATS" == "yes" ] || [ "$SAVEHIST" == "yes" ]; then
+  if [ -d "$SAVEFOL"/ ]; then
+    if [ ! -w "$SAVEFOL"/ ]; then
+      echo "Default save location $SAVEFOL is not writable. Please check permissions and try again."
+      exit 1
+    fi
+  else
+    if ! mkdir -p "$SAVEFOL"; then
+      echo "Unable to create $SAVEFOL. Please check destination and try again."
+      exit 1
+    fi
+  fi
+fi
+
+# Check if STATLOC is writeable
+if [ "$SAVESTATS" == "yes" ] && [ ! -w "$STATLOC" ]; then
+  echo "SAVESTATS is enabled, but $STATLOC is not writeable. Disabling stats."
+  SAVESTATS=no
+  sleep 5
+fi
+
+# Check if HISTLOC is writeable
+if [ "$SAVEHIST" == "yes" ] && [ ! -w "$HISTLOC" ]; then
+  echo "SAVEHIST is enabled, but $HISTLOC is not writeable. Disabling history."
+  SAVEHIST=no
+  sleep 5
+fi
+
 # Make sure the counters are reset
 SECONDS=0
 COUNT=0
@@ -330,6 +362,17 @@ sleep 4
 # Save the source location for easy future reference
 # (I kept forgetting which source I used when I went to delete)
 realpath "$SRC" > "$DEST"/000-SOURCE.txt
+
+# If history is enabled, save the folders
+if [ "$SAVEHIST" == "yes" ]; then
+  {
+    date
+    echo "$SRC"
+    echo "   $(basename "$SRC")"
+    find "$SRC" -type d | sed "s|$SRC|      |g" | tail -n+2
+    echo
+  } >> "$HISTLOC"
+fi
 
 # Time to start looping through the directory and convert files
 for FILE in "$SRC"/**; do
