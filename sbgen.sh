@@ -141,7 +141,7 @@ function SBintro() {
   mkdir -p $SBOUTPUT
 
   # Let's create the copyright header
-  cat << EOF > $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF > ${SBOUTPUT}/$PRGNAM.SlackBuild
 #!/bin/bash
 
 # Slackware build script for $PRGNAM
@@ -170,7 +170,7 @@ EOF
   # Now we'll set up the section for variables, extracting the source, and
   # changing permissions.
 
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 cd \$(dirname \$0) ; CWD=\$(pwd)
 
 PRGNAM=\${PRGNAM:-$PRGNAM}
@@ -219,7 +219,7 @@ EOF
 }
 
 function SBextract() {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 rm -rf \$PRGNAM-\$VERSION
 tar xvf \$CWD/\$PRGNAM-\$VERSION.tar.gz
 cd \$PRGNAM-\$VERSION
@@ -235,7 +235,7 @@ EOF
 
 # 2179 autotools scripts
 function SBautotools() {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
 CXXFLAGS="\$SLKCFLAGS" \\
 ./configure \\
@@ -259,7 +259,7 @@ EOF
 # 848 python scripts
 function SBpython () {
   # This will automatically add python3 support. Please remove it if you don't want it.
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 # For python2
 python2 setup.py install --root=\$PKG
 
@@ -271,7 +271,7 @@ EOF
 
 #578 cmake scripts
 function SBcmake () {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 mkdir -p build
 cd build
   cmake \\
@@ -317,7 +317,7 @@ EOF
 
 # 551 perl scripts
 function SBperl () {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 # Build method #1 (preferred)
 perl Makefile.PL \\
   PREFIX=/usr \\
@@ -344,7 +344,7 @@ EOF
 
 # 328 haskell scripts
 function SBhaskell () {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
 CXXFLAGS="\$SLKCFLAGS" \\
 runghc Setup configure \\
@@ -370,7 +370,7 @@ EOF
 
 # 91 ruby scripts
 function SBruby () {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 
 DESTDIR=\$( ruby -r rbconfig -e '
 include RbConfig
@@ -423,7 +423,7 @@ EOF
 }
 
 function SBstrip_docs() {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 find \$PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \\
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
@@ -445,7 +445,7 @@ EOF
 }
 
 function SBclosing() {
-  cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 mkdir -p \$PKG/install
 cat \$CWD/slack-desc > \$PKG/install/slack-desc
 cat \$CWD/doinst.sh > \$PKG/install/doinst.sh
@@ -458,7 +458,7 @@ echo "${SBOUTPUT}/${PRGNAM}.SlackBuild was created"
 }
 
 function info() {
-  cat << EOF > $SBOUTPUT/$PRGNAM.info
+  cat << EOF > ${SBOUTPUT}/$PRGNAM.info
 PRGNAM="$PRGNAM"
 VERSION="$VERSION"
 HOMEPAGE="$HOMEPAGE"
@@ -479,7 +479,7 @@ function slack-desc() {
   PADNUM=${#PRGNAM}
   PADDING=$(printf "%*s%s" $PADNUM)
 
-  cat << EOF > $SBOUTPUT/slack-desc
+  cat << EOF > ${SBOUTPUT}/slack-desc
 # HOW TO EDIT THIS FILE:
 # The "handy ruler" below makes it easier to edit a package description.
 # Line up the first '|' above the ':' following the base package name, and
@@ -504,13 +504,13 @@ EOF
   echo "${SBOUTPUT}/slack-desc was created"
 
   # Let's cheat and copy the use the slack-desc for the base README
-  tail -n 11 $SBOUTPUT/slack-desc | sed "s/$PRGNAM://g" > $SBOUTPUT/README
+  tail -n 11 ${SBOUTPUT}/slack-desc | sed "s/$PRGNAM://g" > ${SBOUTPUT}/README
 
   echo "${SBOUTPUT}/README was created"
 }
 
 function other() {
-  echo -e "# Use this for manually creating package\n" >> $SBOUTPUT/$PRGNAM.SlackBuild
+  echo -e "# Use this for manually creating package\n" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 }
 
 SBintro
