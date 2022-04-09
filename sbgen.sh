@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2017-2020 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2017-2022 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,7 +25,12 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
-# v0.1 - Initial release
+# v0.1 - Initial release (13 APR 2017)
+# v0.2 - Add automatic padding for slack-desc (31 MAY 2020)
+# v0.3 - Bump scripts to match 15.0 templates (7 MAR 2022)
+
+# "one-liner" to find count of scripts using stock commands per script type
+# for i in "\./configure \\\\" "cmake \\\\" "runghc Setup configure" "meson \\.\\. \\\\" "^perl.*\\.PL" "python. setup.py install" "gem specification"; do grep "$i" ~/sbo-github/*/*/*.SlackBuild | cut -d: f1 | uniq | wc -l; done
 
 # ===========================================================================
 # User configurable settings. Add your information here or override when
@@ -41,7 +46,7 @@ SBLOC=${SBLOC:-./slackbuilds}
 function help() {
   cat <<EOH
 -- Usage:
-   $(basename $0) [options] <1-7> <program_name> <version> [category]
+   $(basename $0) [options] <1-8> <program_name> <version> [category]
 
 -- Option parameters:
    -h :    This help.
@@ -71,7 +76,8 @@ function help() {
    4 : Perl (perl Makefile.PL)
    5 : Haskell (runghc Setup Configure)
    6 : RubyGem (gem specification && gem install)
-   7 : Other (Used for manually specifying "build" process)
+   7 : Meson (mkdir build && cd build && meson ..)
+   8 : Other (Used for manually specifying "build" process)
 
    (This list is sorted based on the frequency in SBo's 14.2 repo.)
 
@@ -115,7 +121,7 @@ if [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
   echo -e "\n\tERROR: You must pass the script type, program name, and version.\n"
   help
   exit
-elif ! [[ $1 =~ [1-7] ]]; then
+elif ! [[ $1 =~ [1-8] ]]; then
   echo -e "\n\tERROR: Invalid script type\n"; help; exit
 fi
 
@@ -136,7 +142,7 @@ function SBintro() {
 
   # Let's create the copyright header
   cat << EOF > $SBOUTPUT/$PRGNAM.SlackBuild
-#!/bin/sh
+#!/bin/bash
 
 # Slackware build script for $PRGNAM
 
@@ -165,20 +171,27 @@ EOF
   # changing permissions.
 
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
+cd \$(dirname \$0) ; CWD=\$(pwd)
+
 PRGNAM=\${PRGNAM:-$PRGNAM}
 VERSION=\${VERSION:-$VERSION}
 BUILD=\${BUILD:-1}
 TAG=\${TAG:-_SBo}
+PKGTYPE=\${PKGTYPE:-tgz}
 
 if [ -z "\$ARCH" ]; then
   case "\$( uname -m )" in
     i?86) ARCH=i586 ;;
     arm*) ARCH=arm ;;
-    *) ARCH=\$( uname -m ) ;;
+       *) ARCH=\$( uname -m ) ;;
   esac
 fi
 
-CWD=\$(pwd)
+if [ ! -z "\${PRINT_PACKAGE_NAME}" ]; then
+  echo "\$PRGNAM-\$VERSION-\$ARCH-\$BUILD\$TAG.\$PKGTYPE"
+  exit 0
+fi
+
 TMP=\${TMP:-/tmp/SBo}
 PKG=\$TMP/package-\$PRGNAM
 OUTPUT=\${OUTPUT:-/tmp}
@@ -220,6 +233,7 @@ find -L . \\
 EOF
 }
 
+# 2179 autotools scripts
 function SBautotools() {
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
@@ -231,27 +245,31 @@ CXXFLAGS="\$SLKCFLAGS" \\
   --localstatedir=/var \\
   --mandir=/usr/man \\
   --docdir=/usr/doc/\$PRGNAM-\$VERSION \\
+  --disable-static \\
   --build=\$ARCH-slackware-linux
 
 make
 make install DESTDIR=\$PKG
 
+rm -f \$PKG/{,usr/}lib\${LIBDIRSUFFIX}/*.la
+
 EOF
 }
 
+# 848 python scripts
 function SBpython () {
   # This will automatically add python3 support. Please remove it if you don't want it.
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
-python setup.py install --root=\$PKG
+# For python2
+python2 setup.py install --root=\$PKG
 
-# Install python3 if detected. Override with PYTHON3=no.
-if $(python3 -c 'import sys' 2>/dev/null) && [ "\${PYTHON3:-yes}" == "yes" ]; then
-  python3 setup.py install --root=\$PKG
-fi
+# For python3
+python3 setup.py install --root=\$PKG
 
 EOF
 }
 
+#578 cmake scripts
 function SBcmake () {
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 mkdir -p build
@@ -264,12 +282,40 @@ cd build
     -DMAN_INSTALL_DIR=/usr/man \\
     -DCMAKE_BUILD_TYPE=Release ..
   make
-  make install DESTDIR=\$PKG
+  make install/strip DESTDIR=\$PKG
 cd ..
+
+rm -f \$PKG/{,usr/}lib\${LIBDIRSUFFIX}/*.la
 
 EOF
 }
 
+# 58 meson scripts
+function SBmeson () {
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+mkdir build
+cd build
+  CFLAGS="\$SLKCFLAGS" \
+  CXXFLAGS="\$SLKCFLAGS" \
+  meson .. \
+    --buildtype=release \
+    --infodir=/usr/info \
+    --libdir=/usr/lib\${LIBDIRSUFFIX} \
+    --localstatedir=/var \
+    --mandir=/usr/man \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    -Dstrip=true
+  "\${NINJA:=ninja}"
+  DESTDIR=\$PKG \$NINJA install
+cd ..
+
+rm -f \$PKG/{,usr/}lib\${LIBDIRSUFFIX}/*.la
+
+EOF
+}
+
+# 551 perl scripts
 function SBperl () {
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 # Build method #1 (preferred)
@@ -296,6 +342,7 @@ perl Build.PL \\
 EOF
 }
 
+# 328 haskell scripts
 function SBhaskell () {
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
@@ -321,6 +368,7 @@ mv \$SRCNAM-\$VERSION.conf \$PKG/\$PKGCONFD/\$PKGID.conf
 EOF
 }
 
+# 91 ruby scripts
 function SBruby () {
   cat << EOF >> $SBOUTPUT/$PRGNAM.SlackBuild
 
@@ -341,13 +389,13 @@ path = sprintf("%s/%s/gems/%s",
         c["RUBY_INSTALL_NAME"],
         c["ruby_version"])
 sys_gemspecs = Dir.glob(path + "/specifications/**/*.gemspec").map {|g| gs = Gem::Specification.load(g); gs.name }
-obj = Gem::Specification.from_yaml($stdin)
+obj = Gem::Specification.from_yaml(\$stdin)
 obj.dependencies.each {|dep|
         if not(dep.type == :runtime)
                 next
         end
         if not(sys_gemspecs.include?(dep.name))
-                $stderr.write("WARNING: #{dep.name} gem not found\n")
+                \$stderr.write("WARNING: #{dep.name} gem not found\n")
                 sleep 0.5
         end
 
@@ -479,7 +527,9 @@ case $1 in
       ;;
   6 ) SBruby
       ;;
-  7 ) SBextract; other; SBstrip_docs
+  7 ) SBextract; SBmeson; SBstrip_docs
+      ;;
+  8 ) SBextract; other; SBstrip_docs
       ;;
   * ) echo -e "\n\tERROR: Invalid script type\n"; help; exit
 esac
