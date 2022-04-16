@@ -305,7 +305,8 @@ echo "Finding total filecount. Please wait..."
 for FILE in "$SRC"/**; do
 
   # Only count and check if it's a video file
-  if file -i "$FILE" | grep video &> /dev/null; then
+  # Catch bug in 14.2's file program wrongly detecting some mpg files as x-tga
+  if file -i "$FILE" | grep -q -e video -e 'mpg\|mpeg'.*image/x-tga; then
     ((TOTALCNT+=1))
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
   # But, if it's a subtitle, count it separately to present to the user.
@@ -383,7 +384,8 @@ for FILE in "$SRC"/**; do
   fi
 
   # Don't try and convert if the file isn't a video
-  if ! file -i "$FILE" | grep video &> /dev/null; then
+  # Catch bug in 14.2's file program wrongly detecting some mpg files as x-tga
+  if ! file -i "$FILE" | grep -q -e video -e 'mpg\|mpeg'.*image/x-tga; then
     continue
   fi
 
