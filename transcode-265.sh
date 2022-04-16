@@ -35,6 +35,7 @@
 
 # -----------------------------------------------------------------------------
 
+# --------------------------Global Settings Beginning--------------------------
 SRC="$1"
 DEST="$2"
 EXT="${3:-mkv}"
@@ -47,6 +48,7 @@ SAVEHIST="${SAVEHIST:-yes}"
 HISTLOC="${HISTLOC:-$SAVEFOL/transcode-history}"
 
 MERGESUBS="${MERGESUBS:-yes}"
+# ---------------------------Global Settings Ending----------------------------
 
 function help ()
 {
@@ -76,6 +78,10 @@ function help ()
    the bottom of the help output or when transcoding is complete. Save file
    defaults to ~/.transcode-stats, but can be moved to a global location if
    being used for multiple users.
+
+   If global history is enabled (SAVEHIST=yes), then the folder locations of
+   the original files will be saved. There may be future checks added to
+   prevent duplicate, accidental transcodes.
 
    Subtitle files (srt only for now) are detected and the user is prompted on
    if they'd like merge them into the resulting mkv (doesn't currently work on
@@ -172,6 +178,54 @@ print_global_stats()
   fi
 }
 
+check_dir()
+{
+  DIR2CHK="$1"
+  REASON="$2"
+
+  # First check if the directory exists, otherwise we'll try to create it
+  if [ -d "$DIR2CHK"/ ]; then
+    # If the directory exists, but is not writeable, throw an error
+    if [ ! -w "$DIR2CHK" ]; then
+      echo "Directory $DIR2CHK used for $REASON is not writable!"
+      echo "Please check permissions and try again."
+      return 1
+    fi
+  else
+    # If it doesn't exists and we can't create the directory, throw an error
+    if ! mkdir -p "$DIR2CHK"; then
+      echo "Unable to create the $DIR2CHK directory used for $REASON."
+      echo "Please check destination and try again."
+      return 1
+    fi
+  fi
+}
+
+check_file()
+{
+  FILE2CHK="$1"
+  REASON="$2"
+
+  # First check if it exists, otherwise we'll try to create it
+  if [ -f "$FILE2CHK" ]; then
+    # If it exists, but is not writeable, throw an error
+    # This is not catastrophic in most cases, so just set a return code
+    # and let that function determine what to do
+    if [ ! -w "$FILE2CHK" ]; then
+      echo "$REASON is enabled, but $FILE2CHK is not writable."
+      return 1
+    fi
+  else
+    # If we can't create it, throw an error
+    # This is not catastrophic in most cases, so just set a return code
+    # and let that function determine what to do
+    if ! touch "$FILE2CHK"; then
+      echo "Unable to create $FILE2CHK."
+      return 1
+    fi
+  fi
+}
+
 # mp4 extensions don't support our method of importing subs. They need to be
 # specially added using mov_text, which is very limited. This is not currently
 # supported as I prefer mkv files (but support may be added later).
@@ -183,6 +237,78 @@ if [ "$EXT" == "mp4" ] && [ "$MERGESUBS" == "yes" ]; then
   echo "will continue with using the mp4 extension without merging subs."
   sleep 5
   MERGESUBS="no"
+fi
+
+# Time to check our inputs
+
+# Check to see if they passed source and destination locations
+if [ -z "$SRC" ] || [ -z "$DEST" ]; then
+  echo -e "\n!!ERROR!!\n$(basename "$0") requires passing the source and destination directories\n"
+  help
+  exit 1
+fi
+
+# Check to see if the source directory exists
+if [ ! -d "$SRC" ]; then
+  echo -e "\n!!ERROR!!\n$SRC does not exist or you don't have permission to access it.\n"
+  help
+  exit 1
+fi
+
+# Try to create the destination directory
+if ! check_dir "$DEST" "destination directory"; then
+  exit 1
+fi
+
+# Make the extension lowercase
+EXT=${EXT,,}
+# Make sure the extension is either mkv or mp4
+if [ "$EXT" != "mkv" ] && [ "$EXT" != "mp4" ]; then
+  echo -e "\n!!ERROR!!\n$3 is not a valid extension. Please choose \"mp4\" or \"mkv\".\n"
+  help
+  exit 1
+fi
+
+# Make sure the HandBrake preset exists.
+if ! HandBrakeCLI --preset-import-gui -z 2>&1 >/dev/null | grep -q "$PRESET"; then
+  echo -e "\n!!ERROR!!\n\"$PRESET\" is not a valid HandBrake preset.\n"
+  sleep 3
+  HandBrakeCLI --preset-import-gui -z
+  exit 1
+fi
+
+# Check that the folder exists and is writeable.
+# If not, disable stats and history.
+if [ "$SAVESTATS" == "yes" ] || [ "$SAVEHIST" == "yes" ]; then
+  if ! check_dir "$SAVEFOL" "stats directory"; then
+    if [ "$SAVESTATS" == "yes" ]; then
+      echo "Disabling stats."
+      SAVESTATS=no
+    fi
+    if [ "$SAVEHIST" == "yes" ]; then
+      echo "Disabling history."
+      SAVEHIST=no
+    fi
+    sleep 5
+  fi
+fi
+
+# Check if STATLOC is writeable
+if [ "$SAVESTATS" == "yes" ]; then
+  if ! check_file "$STATLOC" "SAVESTATS"; then
+    echo "Disabling stats."
+    SAVESTATS=no
+    sleep 5
+  fi
+fi
+
+# Check if HISTLOC is writeable
+if [ "$SAVEHIST" == "yes" ]; then
+  if ! check_file "$HISTLOC" "SAVEHIST"; then
+    echo "Disabling history."
+    SAVEHIST=no
+    sleep 5
+  fi
 fi
 
 # Get global stats going if set
@@ -209,76 +335,6 @@ if [ "$SAVESTATS" == "yes" ]; then
   else
     source "$STATLOC"
   fi
-fi
-
-# Time to check our inputs
-
-# Check to see if they passed source and destination locations
-if [ -z "$SRC" ] || [ -z "$DEST" ]; then
-  echo -e "\n!!ERROR!!\n$(basename "$0") requires passing the source and destination directories\n"
-  help
-  exit 1
-fi
-
-# Check to see if the source directory exists
-if [ ! -d "$SRC" ]; then
-  echo -e "\n!!ERROR!!\n$SRC does not exist or you don't have permission to access it.\n"
-  help
-  exit 1
-fi
-
-# Try to create the destination directory
-if ! mkdir -p "$DEST"; then
-  echo -e "\n!!ERROR!!\nFailed to create the \"$DEST\"."
-  echo -e "Do you have proper permissions?\n"
-  help
-  exit 1
-fi
-
-# Make the extension lowercase
-EXT=${EXT,,}
-# Make sure the extension is either mkv or mp4
-if [ "$EXT" != "mkv" ] && [ "$EXT" != "mp4" ]; then
-  echo -e "\n!!ERROR!!\n$3 is not a valid extension. Please choose \"mp4\" or \"mkv\".\n"
-  help
-  exit 1
-fi
-
-# Make sure the HandBrake preset exists.
-if ! HandBrakeCLI --preset-import-gui -z 2>&1 >/dev/null | grep -q "$PRESET"; then
-  echo -e "\n!!ERROR!!\n\"$PRESET\" is not a valid HandBrake preset.\n"
-  sleep 3
-  HandBrakeCLI --preset-import-gui -z
-  exit 1
-fi
-
-# Check that the folder exists and is writeable.
-if [ "$SAVESTATS" == "yes" ] || [ "$SAVEHIST" == "yes" ]; then
-  if [ -d "$SAVEFOL"/ ]; then
-    if [ ! -w "$SAVEFOL"/ ]; then
-      echo "Default save location $SAVEFOL is not writable. Please check permissions and try again."
-      exit 1
-    fi
-  else
-    if ! mkdir -p "$SAVEFOL"; then
-      echo "Unable to create $SAVEFOL. Please check destination and try again."
-      exit 1
-    fi
-  fi
-fi
-
-# Check if STATLOC is writeable
-if [ "$SAVESTATS" == "yes" ] && [ ! -w "$STATLOC" ]; then
-  echo "SAVESTATS is enabled, but $STATLOC is not writeable. Disabling stats."
-  SAVESTATS=no
-  sleep 5
-fi
-
-# Check if HISTLOC is writeable
-if [ "$SAVEHIST" == "yes" ] && [ ! -w "$HISTLOC" ]; then
-  echo "SAVEHIST is enabled, but $HISTLOC is not writeable. Disabling history."
-  SAVEHIST=no
-  sleep 5
 fi
 
 # Make sure the counters are reset
@@ -368,10 +424,15 @@ realpath "$SRC" > "$DEST"/000-SOURCE.txt
 if [ "$SAVEHIST" == "yes" ]; then
   {
     date
-    echo "$SRC"
+    realpath "$SRC"
     echo "   $(basename "$SRC")"
-    find "$SRC" -type d | sed "s|$SRC|      |g" | tail -n+2
-    echo
+    # Output subdirectories if they exist
+    if [ "$(find "$SRC" -type d | wc -l)" -gt "1" ]; then
+      find "$SRC" -type d | sed "s|$SRC|      |g" | tail -n+2
+    fi
+    realpath "$DEST"
+    echo "Totalling $TOTALCNT files."
+    echo -e "=======================================\n"
   } >> "$HISTLOC"
 fi
 
