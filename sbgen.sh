@@ -482,6 +482,33 @@ echo "${SBOUTPUT}/${PRGNAM}.SlackBuild was created"
 }
 
 function info() {
+
+# Check for 32bit/universal download and update md5sum
+if [ -n "$DOWNLOAD" ] && [ -z $MD5SUM ]; then
+
+  # Download the source and save it in the SlackBuild directory
+  echo "Downloading 32bit/universal source:"
+  if ! wget -qP $SBOUTPUT/ $DOWNLOAD; then
+    echo "Download for $DOWNLOAD failed. Please check link and update manually."
+  else
+    echo "Generating MD5SUM"
+    MD5SUM="$(md5sum "${SBOUTPUT}/$(basename "$DOWNLOAD")" | cut -d" " -f1)"
+  fi
+fi
+
+# Check for 64bit download and update md5sum
+if [ -n "$DOWNLOAD64" ] && [ -z $MD5SUM64 ]; then
+
+  # Download the source and save it in the SlackBuild directory
+  echo "Downloading 64bit source:"
+  if ! wget -qP $SBOUTPUT/ $DOWNLOAD64; then
+    echo "64bit download for $DOWNLOAD64 failed. Please check link and update manually."
+  else
+    echo "Generating MD5SUM"
+    MD5SUM64="$(md5sum "${SBOUTPUT}/$(basename "$DOWNLOAD64")" | cut -d" " -f1)"
+  fi
+fi
+
   cat << EOF > ${SBOUTPUT}/$PRGNAM.info
 PRGNAM="$PRGNAM"
 VERSION="$VERSION"
