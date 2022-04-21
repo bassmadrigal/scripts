@@ -657,7 +657,7 @@ elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
   {
     echo
     echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
-    echo "It completed it in $TOTALTIME averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
+    echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
     echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
     echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
     echo "Increased total size by $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)%, adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
