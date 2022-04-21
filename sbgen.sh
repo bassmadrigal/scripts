@@ -30,6 +30,7 @@
 # v0.3 - Bump scripts to match 15.0 templates (7 MAR 2022)
 # v0.3.1 - Use curly brackets on SBOUTPUT variables (8 APR 2022)
 # v0.4 - Add support for short and long descriptions for slack-desc (20 APR 2022)
+# v0.4.1 - Add SRCNAM option
 
 # "one-liner" to find count of scripts using stock commands per script type
 # for i in "\./configure \\\\" "cmake \\\\" "runghc Setup configure" "meson \\.\\. \\\\" "^perl.*\\.PL" "python. setup.py install" "gem specification"; do grep "$i" ~/sbo-github/*/*/*.SlackBuild | cut -d: f1 | uniq | wc -l; done
@@ -62,6 +63,7 @@ function help() {
              (Multiples REQUIRES need to be enclosed in quotes)
    -s :    Set the short description (use quotations)
    -l :    Set the long description (will prompt later for the text)
+   -S :    Set optional SRCNAM variable
 
 -- Description:
    This script requires passing at least the number corresponding to script
@@ -89,7 +91,7 @@ EOH
 }
 
 # Option parsing:
-while getopts "hfw:d:m:D:M:r:s:l" OPTION
+while getopts "hfw:d:m:D:M:r:s:lS:" OPTION
 do
   case $OPTION in
     h ) help; exit
@@ -111,6 +113,8 @@ do
     s ) SHORTDESC="$OPTARG"
         ;;
     l ) LONGDESC=yes
+        ;;
+    S ) SETSRCNAM="$OPTARG"
         ;;
     * ) help; exit
         ;;
@@ -138,6 +142,13 @@ PRGNAM=$2
 VERSION=$3
 CATEGORY="$4"
 SBOUTPUT="${SBLOC}/${CATEGORY}/${PRGNAM}"
+
+# Set up SRCNAM if used
+if [ -n "$SETSRCNAM" ]; then
+  SRCorPRG="SRCNAM"
+else
+  SRCorPRG="PRGNAM"
+fi
 
 function SBintro() {
   # Let's not overwrite an existing folder unless it is forced
@@ -182,6 +193,11 @@ EOF
 cd \$(dirname \$0) ; CWD=\$(pwd)
 
 PRGNAM=\${PRGNAM:-$PRGNAM}
+EOF
+if [ -n "$SETSRCNAM" ]; then
+  echo "SRCNAM=\${SRCNAM:-$SETSRCNAM}" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+fi
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 VERSION=\${VERSION:-$VERSION}
 BUILD=\${BUILD:-1}
 TAG=\${TAG:-_SBo}
@@ -228,9 +244,9 @@ EOF
 
 function SBextract() {
   cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
-rm -rf \$PRGNAM-\$VERSION
-tar xvf \$CWD/\$PRGNAM-\$VERSION.tar.gz
-cd \$PRGNAM-\$VERSION
+rm -rf \$${SRCorPRG}-\$VERSION
+tar xvf \$CWD/\$${SRCorPRG}-\$VERSION.tar.gz
+cd \$${SRCorPRG}-\$VERSION
 chown -R root:root .
 find -L . \\
  \\( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \\
