@@ -30,7 +30,8 @@
 # v0.3 - Bump scripts to match 15.0 templates (7 MAR 2022)
 # v0.3.1 - Use curly brackets on SBOUTPUT variables (8 APR 2022)
 # v0.4 - Add support for short and long descriptions for slack-desc (20 APR 2022)
-# v0.4.1 - Add SRCNAM option
+# v0.4.1 - Add SRCNAM option (20 APR 2022)
+# v0.4.2 - Add download of source with MD5SUM generation (20 APR 2022)
 
 # "one-liner" to find count of scripts using stock commands per script type
 # for i in "\./configure \\\\" "cmake \\\\" "runghc Setup configure" "meson \\.\\. \\\\" "^perl.*\\.PL" "python. setup.py install" "gem specification"; do grep "$i" ~/sbo-github/*/*/*.SlackBuild | cut -d: f1 | uniq | wc -l; done
