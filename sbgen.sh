@@ -28,6 +28,8 @@
 # v0.1 - Initial release (13 APR 2017)
 # v0.2 - Add automatic padding for slack-desc (31 MAY 2020)
 # v0.3 - Bump scripts to match 15.0 templates (7 MAR 2022)
+# v0.3.1 - Use curly brackets on SBOUTPUT variables (8 APR 2022)
+# v0.4 - Add support for short and long descriptions for slack-desc (20 APR 2022)
 
 # "one-liner" to find count of scripts using stock commands per script type
 # for i in "\./configure \\\\" "cmake \\\\" "runghc Setup configure" "meson \\.\\. \\\\" "^perl.*\\.PL" "python. setup.py install" "gem specification"; do grep "$i" ~/sbo-github/*/*/*.SlackBuild | cut -d: f1 | uniq | wc -l; done
@@ -58,6 +60,8 @@ function help() {
    -M :    Set the 64bit md5sum
    -r :    Set the REQUIRES for required dependencies
              (Multiples REQUIRES need to be enclosed in quotes)
+   -s :    Set the short description (use quotations)
+   -l :    Set the long description (will prompt later for the text)
 
 -- Description:
    This script requires passing at least the number corresponding to script
@@ -85,7 +89,7 @@ EOH
 }
 
 # Option parsing:
-while getopts "hfw:d:m:D:M:r:" OPTION
+while getopts "hfw:d:m:D:M:r:s:l" OPTION
 do
   case $OPTION in
     h ) help; exit
@@ -103,6 +107,10 @@ do
     M ) MD5SUM64=$OPTARG
         ;;
     r ) REQUIRES=$OPTARG
+        ;;
+    s ) SHORTDESC="$OPTARG"
+        ;;
+    l ) LONGDESC=yes
         ;;
     * ) help; exit
         ;;
@@ -479,6 +487,43 @@ function slack-desc() {
   PADNUM=${#PRGNAM}
   PADDING=$(printf "%*s%s" $PADNUM)
 
+  # Set default short description if not set above
+  SHORTDESC=${SHORTDESC:-"short description of app"}
+
+  # Check to see if the short description made it too long
+  if [ $(( ${#PRGNAM} + ${#SHORTDESC} )) -gt "67" ]; then
+    echo "WARNING: The \"$SHORTDESC\" short description is too long. Please edit slack-desc/README manually."
+  fi
+
+  # If LONGDESC is yes, then let's prep it to be put in the slack-desc and README
+  if [ "$LONGDESC" == "yes" ]; then
+
+    # Prompt for the text
+    echo -n "Please paste the text here followed by 'enter' and Ctrl+d: "
+#     read -r TEXT
+#     LONGDESC="$(echo -e "$TEXT" | fmt -w 71 | sed "s|^|$PRGNAM: |g")"
+    LONGDESC="$(fmt -w 71 | sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba' | sed "s|^|$PRGNAM: |g")"
+    LINECNT=$(echo "$LONGDESC" | wc -l)
+  fi
+
+  # Add the homepage if there's enough room
+  if [ "$LINECNT" -lt "8" ] && [ "${#HOMEPAGE}" -lt "62" ]; then
+    LONGDESC=$(echo -e "$LONGDESC\n$PRGNAM:\n$PRGNAM: HOMEPAGE: $HOMEPAGE")
+    LINECNT=$(echo "$LONGDESC" | wc -l)
+  fi
+
+  # Finish off the slack-desc
+  until [ "$LINECNT" -eq "9" ]; do
+    LONGDESC=$(echo -e "$LONGDESC\n$PRGNAM:")
+    LINECNT=$(echo "$LONGDESC" | wc -l)
+  done
+
+  # Throw a warning if slack-desc ends up too long and tell them to fix it manually.
+  if [ "$LINECNT" -gt "9" ]; then
+    echo "WARNING: The long description was too long. slack-desc has (($LINECNT-9)) line(s)"
+    echo "too many. Please manually correct slack-desc before building software."
+  fi
+
   cat << EOF > ${SBOUTPUT}/slack-desc
 # HOW TO EDIT THIS FILE:
 # The "handy ruler" below makes it easier to edit a package description.
@@ -488,23 +533,22 @@ function slack-desc() {
 # customary to leave one space after the ':' except on otherwise blank lines.
 
 $PADDING|-----handy-ruler------------------------------------------------------|
-$PRGNAM: $PRGNAM (short description of app)
+$PRGNAM: $PRGNAM ($SHORTDESC)
 $PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
+$LONGDESC
 EOF
 
   echo "${SBOUTPUT}/slack-desc was created"
 
   # Let's cheat and copy the use the slack-desc for the base README
-  tail -n 11 ${SBOUTPUT}/slack-desc | sed "s/$PRGNAM://g" > ${SBOUTPUT}/README
+  tail -n 11 ${SBOUTPUT}/slack-desc | sed "s/$PRGNAM: //g" | sed "s/$PRGNAM://g" > ${SBOUTPUT}/README
+
+  # Remove the HOMEPAGE line if it exists
+  sed -i '/HOMEPAGE: /d' ${SBOUTPUT}/README
+
+  # Delete all trailing blank lines at end of README
+  # http://sed.sourceforge.net/sed1line.txt
+  sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' ${SBOUTPUT}/README
 
   echo "${SBOUTPUT}/README was created"
 }
