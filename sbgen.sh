@@ -53,18 +53,18 @@ function help() {
    $(basename $0) [options] <1-8> <program_name> <version> [category]
 
 -- Option parameters:
-   -h :    This help.
-   -f :    Force overwriting existing directory
-   -w :    Set the homepage (website)
-   -d :    Set the download location
-   -m :    Set the md5sum
-   -D :    Set the 64bit download
-   -M :    Set the 64bit md5sum
-   -r :    Set the REQUIRES for required dependencies
-             (Multiples REQUIRES need to be enclosed in quotes)
-   -s :    Set the short description (use quotations)
-   -l :    Set the long description (will prompt later for the text)
-   -S :    Set optional SRCNAM variable
+   -h                 :   This help.
+   -f                 :   Force overwriting existing directory
+   -w <homepage>      :   Set the homepage (website)
+   -d <download>      :   Set the download location
+   -m <md5sum>        :   Set the md5sum
+   -D <download64>    :   Set the 64bit download
+   -M <md5sum64>      :   Set the 64bit md5sum
+   -r <dependencies>  :   Set the REQUIRES for required dependencies
+                          (Multiples REQUIRES need to be enclosed in quotes)
+   -s <description>   :   Set the short description (use quotations)
+   -l                 :   Prompt later for long description
+   -S <srcnam>        :   Set optional SRCNAM variable
 
 -- Description:
    This script requires passing at least the number corresponding to script
@@ -86,7 +86,7 @@ function help() {
    7 : Meson (mkdir build && cd build && meson ..)
    8 : Other (Used for manually specifying "build" process)
 
-   (This list is sorted based on the frequency in SBo's 14.2 repo.)
+   (This list is sorted based on the frequency in SBo's 15.0 repo.)
 
 EOH
 }
@@ -479,7 +479,7 @@ cd \$PKG
 /sbin/makepkg -l y -c n \$OUTPUT/\$PRGNAM-\$VERSION-\$ARCH-\$BUILD\$TAG.\${PKGTYPE:-tgz}
 EOF
 
-echo "${SBOUTPUT}/${PRGNAM}.SlackBuild was created"
+echo "Created ${SBOUTPUT}/${PRGNAM}.SlackBuild"
 }
 
 function info() {
@@ -523,7 +523,7 @@ MAINTAINER="$NAME"
 EMAIL="$EMAIL"
 EOF
 
-echo "${SBOUTPUT}/${PRGNAM}.info was created"
+echo "Created ${SBOUTPUT}/${PRGNAM}.info"
 }
 
 function slack-desc() {
@@ -536,16 +536,17 @@ function slack-desc() {
 
   # Check to see if the short description made it too long
   if [ $(( ${#PRGNAM} + ${#SHORTDESC} )) -gt "67" ]; then
-    echo "WARNING: The \"$SHORTDESC\" short description is too long. Please edit slack-desc/README manually."
+    echo -e "\nWARNING: The \"$SHORTDESC\" short description is too long. Please edit slack-desc/README manually.\n"
   fi
 
-  # If LONGDESC is yes, then let's prep it to be put in the slack-desc and README
+  # If $LONGDESC is yes, then let's prep it to be put in the slack-desc and README
   if [ "$LONGDESC" == "yes" ]; then
 
     # Prompt for the text
+    echo "Prompting for long description in slack-desc."
     echo -n "Please paste the text here followed by 'enter' and Ctrl+d: "
-#     read -r TEXT
-#     LONGDESC="$(echo -e "$TEXT" | fmt -w 71 | sed "s|^|$PRGNAM: |g")"
+    # Bring in the text with fmt and shrink it to 71 characters per line, use sed to remove
+    # and extra line breaks, and then use sed again to add $PRGNAM in front
     LONGDESC="$(fmt -w 71 | sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba' | sed "s|^|$PRGNAM: |g")"
     LINECNT=$(echo "$LONGDESC" | wc -l)
   fi
@@ -556,7 +557,7 @@ function slack-desc() {
     LINECNT=$(echo "$LONGDESC" | wc -l)
   fi
 
-  # Finish off the slack-desc
+  # Finish off the slack-desc if required
   until [ "$LINECNT" -eq "9" ]; do
     LONGDESC=$(echo -e "$LONGDESC\n$PRGNAM:")
     LINECNT=$(echo "$LONGDESC" | wc -l)
@@ -564,8 +565,8 @@ function slack-desc() {
 
   # Throw a warning if slack-desc ends up too long and tell them to fix it manually.
   if [ "$LINECNT" -gt "9" ]; then
-    echo "WARNING: The long description was too long. slack-desc has (($LINECNT-9)) line(s)"
-    echo "too many. Please manually correct slack-desc before building software."
+    echo -e "\nWARNING: The long description was too long. slack-desc has (($LINECNT-9)) line(s)"
+    echo -e "too many. Please manually correct slack-desc before building software.\n"
   fi
 
   cat << EOF > ${SBOUTPUT}/slack-desc
@@ -582,7 +583,7 @@ $PRGNAM:
 $LONGDESC
 EOF
 
-  echo "${SBOUTPUT}/slack-desc was created"
+  echo "Created ${SBOUTPUT}/slack-desc"
 
   # Let's cheat and copy the use the slack-desc for the base README
   tail -n 11 ${SBOUTPUT}/slack-desc | sed "s/$PRGNAM: //g" | sed "s/$PRGNAM://g" > ${SBOUTPUT}/README
@@ -594,7 +595,7 @@ EOF
   # http://sed.sourceforge.net/sed1line.txt
   sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' ${SBOUTPUT}/README
 
-  echo "${SBOUTPUT}/README was created"
+  echo "Created ${SBOUTPUT}/README"
 }
 
 function other() {
