@@ -25,15 +25,24 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
-# v0.1 - Initial release (13 APR 2017)
-# v0.2 - Add automatic padding for slack-desc (31 MAY 2020)
-# v0.3 - Bump scripts to match 15.0 templates (7 MAR 2022)
-# v0.3.1 - Use curly brackets on SBOUTPUT variables (8 APR 2022)
-# v0.4 - Add support for short and long descriptions for slack-desc (20 APR 2022)
-# v0.4.1 - Add SRCNAM option (20 APR 2022)
-# v0.4.2 - Add download of source with MD5SUM generation (20 APR 2022)
-# v0.4.3 - Add SRCVER and conf file support (24 APR 2022)
-# v0.4.4 - Fix regex and change slack-desc function to gen_slackdesc (24 APR 2022)
+# v0.4.4 - 24 APR 2022
+#          Fix regex and change slack-desc function to gen_slackdesc
+# v0.4.3 - 24 APR 2022
+#          Add SRCVER and conf file support
+# v0.4.2 - 20 APR 2022
+#          Add download of source with MD5SUM generation
+# v0.4.1 - 20 APR 2022
+#          Add SRCNAM option
+# v0.4   - 20 APR 2022
+#          Add support for short and long descriptions for slack-desc
+# v0.3.1 - 8 APR 2022
+#          Use curly brackets on SBOUTPUT variables
+# v0.3   - 7 MAR 2022
+#          Bump scripts to match 15.0 templates
+# v0.2   - 31 MAY 2020
+#          Add automatic padding for slack-desc
+# v0.1   - 13 APR 2017
+#          Initial release
 
 # "one-liner" to find count of scripts using stock commands per script type
 # for i in "\./configure \\\\" "cmake \\\\" "runghc Setup configure" "meson \\.\\. \\\\" "^perl.*\\.PL" "python. setup.py install" "gem specification"; do grep "$i" ~/sbo-github/*/*/*.SlackBuild | cut -d: f1 | uniq | wc -l; done
