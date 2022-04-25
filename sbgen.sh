@@ -424,14 +424,14 @@ function SBruby () {
 DESTDIR=\$( ruby -r rbconfig -e '
 include RbConfig
 printf("%s/%s/gems/%s\n",
-	CONFIG["libdir"],
-	CONFIG["RUBY_INSTALL_NAME"],
-	CONFIG["ruby_version"]
+        CONFIG["libdir"],
+        CONFIG["RUBY_INSTALL_NAME"],
+        CONFIG["ruby_version"]
       )
 ')
 
 gem specification \$CWD/\$SRCNAM-\$VERSION.gem | \\
-	ruby -r yaml -r rbconfig -e '
+        ruby -r yaml -r rbconfig -e '
 c = RbConfig::CONFIG
 path = sprintf("%s/%s/gems/%s",
         c["libdir"],
@@ -451,13 +451,13 @@ obj.dependencies.each {|dep|
 }'
 
 gem install \\
-	--local \\
-	--no-update-sources \\
-	--ignore-dependencies \\
-	--backtrace \\
-	--install-dir \$PKG/\$DESTDIR \\
-	--bindir \$PKG/usr/bin \\
-	\$CWD/\$SRCNAM-\$VERSION.gem
+        --local \\
+        --no-update-sources \\
+        --ignore-dependencies \\
+        --backtrace \\
+        --install-dir \$PKG/\$DESTDIR \\
+        --bindir \$PKG/usr/bin \\
+        \$CWD/\$SRCNAM-\$VERSION.gem
 
 find \$PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \\
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
