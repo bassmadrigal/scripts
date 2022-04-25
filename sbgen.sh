@@ -37,8 +37,12 @@
 # for i in "\./configure \\\\" "cmake \\\\" "runghc Setup configure" "meson \\.\\. \\\\" "^perl.*\\.PL" "python. setup.py install" "gem specification"; do grep "$i" ~/sbo-github/*/*/*.SlackBuild | cut -d: f1 | uniq | wc -l; done
 
 # ===========================================================================
-# User configurable settings. Add your information here or override when
-# running the script.
+# User configurable settings. Add your information here, override with shell
+# variables, or create a conf file (default set to $HOME/.sbgen.conf)
+
+CONFFILE=${CONFFILE:-"$HOME/.sbgen.conf"}
+[ -f ${CONFFILE} ] && source ${CONFFILE}
+
 NAME=${NAME:-Your name}
 EMAIL=${EMAIL:-Your email}
 YEAR=${YEAR:-$(date +%Y)}
