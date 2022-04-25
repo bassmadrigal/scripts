@@ -33,6 +33,7 @@
 # v0.4.1 - Add SRCNAM option (20 APR 2022)
 # v0.4.2 - Add download of source with MD5SUM generation (20 APR 2022)
 # v0.4.3 - Add SRCVER and conf file support (24 APR 2022)
+# v0.4.4 - Fix regex and change slack-desc function to gen_slackdesc (24 APR 2022)
 
 # "one-liner" to find count of scripts using stock commands per script type
 # for i in "\./configure \\\\" "cmake \\\\" "runghc Setup configure" "meson \\.\\. \\\\" "^perl.*\\.PL" "python. setup.py install" "gem specification"; do grep "$i" ~/sbo-github/*/*/*.SlackBuild | cut -d: f1 | uniq | wc -l; done
@@ -142,7 +143,7 @@ if [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
   echo -e "\n\tERROR: You must pass the script type, program name, and version.\n"
   help
   exit
-elif ! [[ $1 =~ [1-8] ]]; then
+elif ! [[ $1 =~ ^[1-8]$ ]]; then
   echo -e "\n\tERROR: Invalid script type\n"; help; exit
 fi
 
@@ -549,7 +550,7 @@ EOF
 echo "Created ${SBOUTPUT}/${PRGNAM}.info"
 }
 
-function slack-desc() {
+function gen_slackdesc() {
   # Get PRGNAM's character count so we can pad the handy ruler
   PADNUM=${#PRGNAM}
   PADDING=$(printf "%*s%s" $PADNUM)
@@ -647,4 +648,4 @@ case $1 in
 esac
 SBclosing
 info
-slack-desc
+gen_slackdesc
