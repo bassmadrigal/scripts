@@ -65,6 +65,7 @@ function help() {
    -s <description>   :   Set the short description (use quotations)
    -l                 :   Prompt later for long description
    -S <srcnam>        :   Set optional SRCNAM variable
+   -V <srcver>        :   Set optional SRCVER variable
 
 -- Description:
    This script requires passing at least the number corresponding to script
@@ -92,7 +93,7 @@ EOH
 }
 
 # Option parsing:
-while getopts "hfw:d:m:D:M:r:s:lS:" OPTION
+while getopts "hfw:d:m:D:M:r:s:lS:V:" OPTION
 do
   case $OPTION in
     h ) help; exit
@@ -116,6 +117,8 @@ do
     l ) LONGDESC=yes
         ;;
     S ) SETSRCNAM="$OPTARG"
+        ;;
+    V ) SETSRCVER="$OPTARG"
         ;;
     * ) help; exit
         ;;
@@ -149,6 +152,13 @@ if [ -n "$SETSRCNAM" ]; then
   SRCorPRG="SRCNAM"
 else
   SRCorPRG="PRGNAM"
+fi
+
+# Set up SRCVER if used
+if [ -n "$SETSRCVER" ]; then
+  SRCorVER="SRCVER"
+else
+  SRCorVER="VERSION"
 fi
 
 function SBintro() {
@@ -194,12 +204,19 @@ EOF
 cd \$(dirname \$0) ; CWD=\$(pwd)
 
 PRGNAM=\${PRGNAM:-$PRGNAM}
-EOF
-if [ -n "$SETSRCNAM" ]; then
-  echo "SRCNAM=\${SRCNAM:-$SETSRCNAM}" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
-fi
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 VERSION=\${VERSION:-$VERSION}
+EOF
+
+  # Add SRCNAM and SRCVER if set
+  if [ -n "$SETSRCNAM" ]; then
+    echo "SRCNAM=\${SRCNAM:-$SETSRCNAM}" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  fi
+  if [ -n "$SETSRCVER" ]; then
+    echo "SRCVER=\${SRCVER:-$SETSRCVER}" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  fi
+
+  # Resume the rest
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 BUILD=\${BUILD:-1}
 TAG=\${TAG:-_SBo}
 PKGTYPE=\${PKGTYPE:-tgz}
@@ -243,11 +260,12 @@ cd \$TMP
 EOF
 }
 
+# Extract section with optional SRCNAM and SRCVER support
 function SBextract() {
   cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
-rm -rf \$${SRCorPRG}-\$VERSION
-tar xvf \$CWD/\$${SRCorPRG}-\$VERSION.tar.gz
-cd \$${SRCorPRG}-\$VERSION
+rm -rf \$${SRCorPRG}-\$${SRCorVER}
+tar xvf \$CWD/\$${SRCorPRG}-\$${SRCorVER}.tar.gz
+cd \$${SRCorPRG}-\$${SRCorVER}
 chown -R root:root .
 find -L . \\
  \\( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \\
