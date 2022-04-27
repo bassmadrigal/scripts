@@ -178,6 +178,24 @@ print_global_stats()
   fi
 }
 
+final_stats()
+{
+  # Save the current stats to the output directory and cat the file
+  # Useful to be able to see stats remotely or when 'screen' corrupts output
+  {
+    echo
+    echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
+    echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
+    echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
+    echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
+    echo "Increased total size by $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)%, adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
+    if [ $SUBSADDED -ge "1" ]; then
+      echo "Added $SUBSADDED subtitle files into videos."
+    fi
+  } >> "$DEST"/000-stats
+  cat "$DEST"/000-stats
+}
+
 check_dir()
 {
   DIR2CHK="$1"
@@ -626,25 +644,13 @@ fi
 # Calculate the total time it took to transcode the files
 TOTALTIME=$(calc_time $SECONDS)
 
-if [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -lt "$ORIGSIZE" ]; then
-  # Check if stats are enabled and print
+if [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -le "$ORIGSIZE" ]; then
+  # Print global stats if enabled
   print_global_stats
-  # Then save the current stats to the output directory and cat the file
-  # Useful to be able to see stats remotely or when 'screen' corrupts output
-  {
-    echo
-    echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
-    echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
-    echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
-    echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
-    echo "Reduced total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, saving $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
-    if [ $SUBSADDED -ge "1" ]; then
-      echo "Added $SUBSADDED subtitle files into videos."
-    fi
-  } >> "$DEST"/000-stats
-  cat "$DEST"/000-stats
+  # Print final stats from the transcoding
+  final_stats
 elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
-  # Check if stats are enabled and print
+  # Print global stats if enabled
   print_global_stats
 
   # Make sure they see that files are bigger.
@@ -652,20 +658,8 @@ elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
   echo -e "File size \e[33mincreased\e[0m $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)% adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
   echo -e "Please consider using the original files and discarding the transcoded files."
 
-  # Then save the current stats to the output directory and cat the file
-  # Useful to be able to see stats remotely or when 'screen' corrupts output
-  {
-    echo
-    echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
-    echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
-    echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
-    echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
-    echo "Increased total size by $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)%, adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
-    if [ $SUBSADDED -ge "1" ]; then
-      echo "Added $SUBSADDED subtitle files into videos."
-    fi
-  } >> "$DEST"/000-stats
-  cat "$DEST"/000-stats
+  # Print final stats from the transcoding
+  final_stats
 fi
 
 # If anything failed, notify which file(s) and the location for the log
