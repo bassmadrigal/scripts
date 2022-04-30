@@ -186,10 +186,14 @@ final_stats()
     echo
     echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
     echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
-    echo "Intial size: $(numfmt --to=iec $ORIGSIZE)"
-    echo "Transcoded size: $(numfmt --to=iec $NEWSIZE)"
-    echo "Increased total size by $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)%, adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
-    if [ $SUBSADDED -ge "1" ]; then
+    echo "Intial size: $(numfmt --to=iec "$ORIGSIZE")"
+    echo "Transcoded size: $(numfmt --to=iec "$NEWSIZE")"
+    # Use UPorDOWN set below to determine whether the size was reduced (common)
+    # or increased (rare). Use the period as a delimeter so we can have the same
+    # echo statement for both.
+    echo "${UPorDOWN%.*} total size by $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)%, ${UPorDOWN#*.} $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
+    # Only display subs added if subs were actually added.
+    if [ "$SUBSADDED" -ge "1" ]; then
       echo "Added $SUBSADDED subtitle files into videos."
     fi
   } >> "$DEST"/000-stats
@@ -648,6 +652,7 @@ if [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -le "$ORIGSIZE" ]; then
   # Print global stats if enabled
   print_global_stats
   # Print final stats from the transcoding
+  UPorDOWN="Reduced.saving"
   final_stats
 elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
   # Print global stats if enabled
@@ -659,6 +664,7 @@ elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
   echo -e "Please consider using the original files and discarding the transcoded files."
 
   # Print final stats from the transcoding
+  UPorDOWN="Increased.adding"
   final_stats
 fi
 
