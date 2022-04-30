@@ -261,45 +261,7 @@ if [ "$EXT" == "mp4" ] && [ "$MERGESUBS" == "yes" ]; then
   MERGESUBS="no"
 fi
 
-# Time to check our inputs
-
-# Check to see if they passed source and destination locations
-if [ -z "$SRC" ] || [ -z "$DEST" ]; then
-  echo -e "\n!!ERROR!!\n$(basename "$0") requires passing the source and destination directories\n"
-  help
-  exit 1
-fi
-
-# Check to see if the source directory exists
-if [ ! -d "$SRC" ]; then
-  echo -e "\n!!ERROR!!\n$SRC does not exist or you don't have permission to access it.\n"
-  help
-  exit 1
-fi
-
-# Try to create the destination directory
-if ! check_dir "$DEST" "destination directory"; then
-  exit 1
-fi
-
-# Make the extension lowercase
-EXT=${EXT,,}
-# Make sure the extension is either mkv or mp4
-if [ "$EXT" != "mkv" ] && [ "$EXT" != "mp4" ]; then
-  echo -e "\n!!ERROR!!\n$3 is not a valid extension. Please choose \"mp4\" or \"mkv\".\n"
-  help
-  exit 1
-fi
-
-# Make sure the HandBrake preset exists.
-if ! HandBrakeCLI --preset-import-gui -z 2>&1 >/dev/null | grep -q "$PRESET"; then
-  echo -e "\n!!ERROR!!\n\"$PRESET\" is not a valid HandBrake preset.\n"
-  sleep 3
-  HandBrakeCLI --preset-import-gui -z
-  exit 1
-fi
-
-# Check that the folder exists and is writeable.
+# Check that the stats/history folder exists and is writeable.
 # If not, disable stats and history.
 if [ "$SAVESTATS" == "yes" ] || [ "$SAVEHIST" == "yes" ]; then
   if ! check_dir "$SAVEFOL" "stats directory"; then
@@ -357,6 +319,44 @@ if [ "$SAVESTATS" == "yes" ]; then
   else
     source "$STATLOC"
   fi
+fi
+
+# Time to check our inputs
+
+# Check to see if they passed source and destination locations
+if [ -z "$SRC" ] || [ -z "$DEST" ]; then
+  echo -e "\n!!ERROR!!\n$(basename "$0") requires passing the source and destination directories\n"
+  help
+  exit 1
+fi
+
+# Check to see if the source directory exists
+if [ ! -d "$SRC" ]; then
+  echo -e "\n!!ERROR!!\n$SRC does not exist or you don't have permission to access it.\n"
+  help
+  exit 1
+fi
+
+# Try to create the destination directory
+if ! check_dir "$DEST" "destination directory"; then
+  exit 1
+fi
+
+# Make the extension lowercase
+EXT=${EXT,,}
+# Make sure the extension is either mkv or mp4
+if [ "$EXT" != "mkv" ] && [ "$EXT" != "mp4" ]; then
+  echo -e "\n!!ERROR!!\n$3 is not a valid extension. Please choose \"mp4\" or \"mkv\".\n"
+  help
+  exit 1
+fi
+
+# Make sure the HandBrake preset exists.
+if ! HandBrakeCLI --preset-import-gui -z 2>&1 >/dev/null | grep -q "$PRESET"; then
+  echo -e "\n!!ERROR!!\n\"$PRESET\" is not a valid HandBrake preset.\n"
+  sleep 3
+  HandBrakeCLI --preset-import-gui -z
+  exit 1
 fi
 
 # Make sure the counters are reset
