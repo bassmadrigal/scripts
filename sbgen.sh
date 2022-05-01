@@ -25,6 +25,9 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.5   - 30 APR 2022
+#          Add interactive mode to prompt for information instead of requiring
+#          passing commandline options
 # v0.4.4 - 24 APR 2022
 #          Fix regex and change slack-desc function to gen_slackdesc
 # v0.4.3 - 24 APR 2022
@@ -65,11 +68,12 @@ SBLOC=${SBLOC:-./slackbuilds}
 function help() {
   cat <<EOH
 -- Usage:
-   $(basename $0) [options] <1-8> <program_name> <version> [category]
+   $(basename $0) [options] <1-$SCRIPTCNT> <program_name> <version> [category]
 
--- Option parameters:
+-- Option parameters  :
    -h                 :   This help.
    -f                 :   Force overwriting existing directory
+   -p                 :   Prompt for all options
    -w <homepage>      :   Set the homepage (website)
    -d <download>      :   Set the download location
    -m <md5sum>        :   Set the md5sum
@@ -93,27 +97,36 @@ function help() {
    categories as this is only local.
 
 -- Script types:
-   1 : AutoTools (./configure && make && make install)
+EOH
+script_types
+}
+
+# Set script count so I don't need to remember to change the prompt range
+# in the many places it is used within the script
+SCRIPTCNT=8
+script_types ()
+{
+  echo -e "   1 : AutoTools (./configure && make && make install)
    2 : Python (python setup.py install)
    3 : CMake (mkdir build && cd build && cmake ..)
    4 : Perl (perl Makefile.PL)
    5 : Haskell (runghc Setup Configure)
    6 : RubyGem (gem specification && gem install)
    7 : Meson (mkdir build && cd build && meson ..)
-   8 : Other (Used for manually specifying "build" process)
+   8 : Other (Used for manually specifying \"build\" process)
 
-   (This list is sorted based on the frequency in SBo's 15.0 repo.)
-
-EOH
+   (This list is sorted based on the frequency in SBo's 15.0 repo.)\n"
 }
 
 # Option parsing:
-while getopts "hfw:d:m:D:M:r:s:lS:V:" OPTION
+while getopts "hfpw:d:m:D:M:r:s:lS:V:" OPTION
 do
   case $OPTION in
     h ) help; exit
         ;;
     f ) FORCE=yes
+        ;;
+    p ) PROMPT=yes
         ;;
     w ) HOMEPAGE=$OPTARG
         ;;
@@ -141,30 +154,286 @@ do
 done
 shift $(($OPTIND - 1))
 
-# Display the help and exit if nothing is passed
-if [ $# -eq 0 ]; then
+# Display the help and exit if nothing is passed except -p
+if [ $# -eq 0 ] && [ "$PROMPT" != "yes" ]; then
   help
   exit 1
 fi
 
-# Error out if three arguments aren't passed
-if [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
+# If PROMPT is set and script type, PRGNAM, and VERSION aren't passed, prompt
+# for them and CATEGORY
+if [ "$PROMPT" == "yes" ] && [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
+  # While loop to ensure proper category is set
+  while true; do
+    echo "Available script types:"
+    script_types
+    read -erp "Please select script type from list [1-$SCRIPTCNT]: " SCRIPTNUM
+    # Check that it's a valid script number
+    if ! [[ $SCRIPTNUM =~ ^[1-$SCRIPTCNT]$ ]]; then
+      echo -e "\n============================================="
+      echo "ERROR: Invalid script type! Please try again."
+      echo -e "=============================================\n"
+    else
+      break
+    fi
+  done
+
+  # Ensure PRGNAM is set
+  while true; do
+    read -erp "Please provide program name (PRGNAM): " PRGNAM
+    if [ -n "${PRGNAM}" ]; then
+      break
+    else
+      echo -e "\nERROR: PRGNAM cannot be blank! Please try again.\n"
+    fi
+  done
+  # Ensure VERSION is set
+  while true; do
+    read -erp "Please provide version: " VERSION
+    if [ -n "${VERSION}" ]; then
+      break
+    else
+      echo -e "\nERROR: VERSION cannot be blank! Please try again.\n"
+    fi
+  done
+  # CATEGORY is optional, so don't check
+  read -erp "Please provide script category (optional): " CATEGORY
+
+# If PROMPT is not set, error out if three arguments aren't passed
+elif [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
   echo -e "\n\tERROR: You must pass the script type, program name, and version.\n"
   help
   exit
-elif ! [[ $1 =~ ^[1-8]$ ]]; then
-  echo -e "\n\tERROR: Invalid script type\n"; help; exit
+# If more than 4 arguments are passed, error out.
+elif [ "$#" -gt "4" ]; then
+  echo -e "\n\tERROR: Too many arguments were passed. Please check command and try again.\n"
+  help
+  exit
+else
+  # Set the program name and version
+  SCRIPTNUM=$1
+  PRGNAM=$2
+  VERSION=$3
+  CATEGORY="$4"
 fi
 
-# Set the program name and version
-PRGNAM=$2
-VERSION=$3
-CATEGORY="$4"
+# Set SBOUTPUT
 SBOUTPUT="${SBLOC}/${CATEGORY}/${PRGNAM}"
 
+# Let's not overwrite an existing folder unless it is forced
+if [ -e $SBOUTPUT ] && [ "$PROMPT" == "yes" ]; then
+  read -erp "$SBOUTPUT already exists. Would you like to overwrite it? y/N " answer
+  # If it's a yes, set FORCE
+  if /usr/bin/grep -qi "y" <<< "$answer"; then
+    FORCE=yes
+  else
+   echo "Please adjust parameters and try again."
+   exit 1
+  fi
+elif [ -e $SBOUTPUT ] && [ "${FORCE:-no}" != "yes" ]; then
+  echo "$SBOUTPUT already exists. To overwrite, use $(basename $0) -f"
+  exit 1
+fi
+
+# If the script type isn't valid, error out.
+if ! [[ $SCRIPTNUM =~ ^[1-$SCRIPTCNT]$ ]]; then
+  echo -e "\n\tERROR: Invalid script type\n"
+  help
+  exit
+fi
+
+# Prompt for remaining options
+if [ "$PROMPT" == "yes" ]; then
+
+  # Regex to check for valid webaddress and file location. Separate http from
+  # ftp as homepages shouldn't be ftp sites, but downloads can be.
+  # Thanks to https://stackoverflow.com/a/3184819/2251996 for the regex
+  REGEX='://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+  WEBEX='(https?)'
+  DOWNEX='(https?|ftp)'
+
+  # Prompt for homepage
+  while true; do
+    read -erp "Please enter homepage: " HOMEPAGE
+    # If a homepage was entered, check regex for proper format. If it is not
+    # seen as valid, prompt them to enter the same homepage a second time to
+    # override the regex. If no homepage was entered, exit the loop and move on
+    if [ -n "${HOMEPAGE}" ]; then
+      # If website was detected as invalid, but the user enters it a second
+      # time, override the regex and save the homepage
+      if [ "$ORIGLINK" == "$HOMEPAGE" ]; then
+        break
+      # If homepage is set, verify it is a valid address with regex
+      elif [[ ! ${HOMEPAGE} =~ ${WEBEX}${REGEX} ]]; then
+        echo -e "\nERROR: Homepage doesn't seem to be a valid website. Please try again."
+        echo -e "If it is valid, enter the same site again to override."
+        ORIGLINK="$HOMEPAGE"
+      # Otherwise keep the homepage entered and move on
+      else
+        break
+      fi
+    # If no homepage was entered, exit the loop
+    else
+      break
+    fi
+  done
+
+  # Prompt for 32bit/universal download
+  while true; do
+    echo -e "\nPlease enter 32bit or universal source link."
+    read -erp "If 32bit is unsupported, leave blank: " DOWNLOAD
+    # If a download was entered, check regex for proper format. If it is not
+    # seen as valid, prompt them to enter the same download a second time to
+    # override the regex. If no download was entered, assume 32bit is
+    # unsupported.
+    if [ -n "${DOWNLOAD}" ]; then
+      # If website was detected as invalid, but the user enters it a second
+      # time, override the regex and save the homepage
+      # Also break if UNSUPPORTED
+      if [ "$ORIGLINK" == "$DOWNLOAD" ] || [ "$DOWNLOAD" == "UNSUPPORTED" ]; then
+        break
+      # If homepage is set, verify it is a valid address with regex
+      elif [[ ! ${DOWNLOAD} =~ ${DOWNEX}${REGEX} ]]; then
+        echo -e "\nERROR: Download doesn't seem to be a valid link. Please try again."
+        echo -e "If it is valid, enter the same link again to override."
+        ORIGLINK="$DOWNLOAD"
+      # Otherwise keep the homepage entered and move on
+      else
+        break
+      fi
+    # If nothing was entered, assume 32bit is not supported
+    else
+      DOWNLOAD="UNSUPPORTED"
+      break
+    fi
+  done
+
+  # Prompt for 32bit/universal md5sum
+  if [ -n "$DOWNLOAD" ] && [ "$DOWNLOAD" != "UNSUPPORTED" ]; then
+    echo -e "\nEnter md5sum for 32bit/universal source."
+    read -erp "Leave blank to have it auto-generated: " MD5SUM
+  fi
+
+  # Prompt for 64bit download
+  while true; do
+    echo -e "\nPlease enter 64bit source link. Leave blank if previous link was universal."
+    read -erp "If 64bit is unsupported, please type \"UNSUPPORTED\": " DOWNLOAD64
+    # If a download was entered, check regex for proper format. If it is not
+    # seen as valid, prompt them to enter the same download a second time to
+    # override the regex. If 64bit is unsupported, prompt user to enter that.
+    # If no download is entered, assume the script does not require a special
+    # download for 64bit.
+    if [ -n "${DOWNLOAD64}" ]; then
+      # If website was detected as invalid, but the user enters it a second
+      # time, override the regex and save the homepage
+      # Also break if UNSUPPORTED
+      if [ "$ORIGLINK" == "$DOWNLOAD64" ] || [ "$DOWNLOAD" == "UNSUPPORTED" ]; then
+        break
+      # If homepage is set, verify it is a valid address with regex
+      elif [[ ! ${DOWNLOAD64} =~ ${DOWNEX}${REGEX} ]] || [ ! "$DOWNLOAD64" == "UNSUPPORTED" ] ; then
+        echo -e "\nERROR: Download doesn't seem to be a valid link. Please try again."
+        echo -e "If it is valid, enter the same link again to override."
+        ORIGLINK="$DOWNLOAD64"
+      # Otherwise keep the homepage entered and move on
+      else
+        break
+      fi
+    # If nothing was entered, exit the loop
+    else
+      break
+    fi
+  done
+
+  # Prompt for 64bit md5sum
+  if [ -n "$DOWNLOAD64" ] && [ "$DOWNLOAD64" != "UNSUPPORTED" ]; then
+    echo -e "\nEnter md5sum for 64bit source."
+    read -erp "Leave blank to have it auto-generated: " MD5SUM64
+  fi
+
+  # Enter any dependencies
+  read -erp "Please enter any required dependencies (otherwise leave blank): " REQUIRES
+
+  # Prompt for SRCNAM -- needed for perl SlackBuilds
+  if [ "$SCRIPTNUM" -ne "4" ]; then
+    read -erp "Set separate source name (SRCNAM) variable (otherwise leave blank): " SETSRCNAM
+  else
+    echo -e "\nPerl scripts set SRCNAM automatically by removing the \"perl-\" from the PRGNAM."
+    echo "Leaving this to the defaults would have SRCNAM be \"$(printf $PRGNAM | cut -d- -f2-)\"."
+    read -erp "Leave blank unless you want to override: " SETSRCNAM
+    SRCorPRG="SRCNAM"
+  fi
+
+  # Prompt for SRCVER
+  read -erp "Set separate source version (SRCVER) variable (otherwise leave blank): " SETSRCVER
+
+  # Try and keep the short description within the length of the handy ruler
+  while true; do
+
+    # Prep some variables for our sanity checks and make sure they didn't add
+    # a closing parenthesis that shouldn't be there
+    if [ -n "$SHORTDESC" ]; then
+      SHORTLENGTH="$(( ${#PRGNAM} + ${#SHORTDESC} ))"
+      OPENPAREN="${SHORTDESC//[^(]}"
+      CLOSEPAREN="${SHORTDESC//[^)]}"
+      # If there are fewer opening parenthesis than closing and the last character
+      # is a closing parenthesis, remove it
+      if [ "${#OPENPAREN}" -lt "${#CLOSEPAREN}" ] && [ "${SHORTDESC: -1}" == ")" ]; then
+        SHORTDESC="${SHORTDESC:: -1}"
+      fi
+    fi
+
+    # If not already set, prompt for short description in slack-desc
+    if [ -z "$SHORTDESC" ] && [ -z "$LOOP" ]; then
+      read -erp "Set short description for slack-desc (otherwise leave blank): " SHORTDESC
+      LOOP=yes
+    # If it is set, check and see if it is too long for the slack-desc
+    elif [ "$SHORTLENGTH" -gt "67" ]; then
+      echo "Short description is too long."
+      # Display the "handy ruler" to better show size requirements
+      echo "|-----handy-ruler------------------------------------------------------|"
+      echo " $PRGNAM ($SHORTDESC)"
+      echo "Please try again (leave off the closing parenthesis)"
+      read -erp " $PRGNAM (" SHORTDESC
+
+    # Otherwise exit the loop
+    else
+      unset LOOP
+      break
+    fi
+  done
+
+  # Prompt to see if they'd like to add a long description later
+  echo -e "\nWould you like to enter the long description for slack-desc?"
+  read -erp "If yes, this will be prompted for later: y/N " answer
+  # If it's a yes, set LONGDESC
+  if /usr/bin/grep -qi "y" <<< "$answer"; then
+    LONGDESC=yes
+  fi
+
+  # Give us a blank line
+  echo
+fi
+
 # Set up SRCNAM if used
-if [ -n "$SETSRCNAM" ]; then
+if [ -n "$SETSRCNAM" ] && [ "$SCRIPTNUM" -ne "4" ]; then
   SRCorPRG="SRCNAM"
+# Perl scripts are unique in determining SRCNAM automatically.
+# If a user manually set SRCNAM, ask them if they're sure they want to use it
+elif [ -n "$SETSRCNAM" ] && [ "$SCRIPTNUM" -eq "4" ]; then
+  echo "Perl scripts set SRCNAM automatically by removing the \"perl-\" from the PRGNAM."
+  echo "You manually specified $SETSRCNAM when the script would set it to $(printf $PRGNAM | cut -d- -f2-)."
+  read -erp "Would you like to keep your manually set name? y/N " answer
+  # If it's a yes, set SRCorPRG
+  if /usr/bin/grep -qi "y" <<< "$answer"; then
+    SRCorPRG="SRCNAM"
+  else
+    SETSRCNAM=
+    SRCorPRG="PRGNAM"
+  fi
+# If SETSRCNAM is not set for perl scripts, default to auto-setting it
+elif [ -z $SETSRCNAM ] && [ "$SCRIPTNUM" -eq "4" ]; then
+  SRCorPRG="SRCNAM"
+# Otherwise assume they don't need SRCNAM
 else
   SRCorPRG="PRGNAM"
 fi
@@ -177,11 +446,6 @@ else
 fi
 
 function SBintro() {
-  # Let's not overwrite an existing folder unless it is forced
-  if [ -e $SBOUTPUT ] && [ "${FORCE:-no}" != "yes" ]; then
-    echo "$SBOUTPUT already exists. To overwrite, use $(basename $0) -f"
-    exit 1
-  fi
 
   mkdir -p $SBOUTPUT
 
@@ -218,7 +482,7 @@ EOF
   cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 cd \$(dirname \$0) ; CWD=\$(pwd)
 
-PRGNAM=\${PRGNAM:-$PRGNAM}
+PRGNAM=$PRGNAM
 VERSION=\${VERSION:-$VERSION}
 EOF
 
@@ -230,12 +494,21 @@ EOF
     echo "SRCVER=\${SRCVER:-$SETSRCVER}" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
   fi
 
-  # Resume the rest
+  # Resume some more
   cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 BUILD=\${BUILD:-1}
 TAG=\${TAG:-_SBo}
 PKGTYPE=\${PKGTYPE:-tgz}
 
+EOF
+
+# Add SRCNAM for perl scripts per the perl template
+if [ "$SCRIPTNUM" -eq "4" ] && [ -z "$SETSRCNAM" ]; then
+  echo -e "SRCNAM=\"\$(printf \$PRGNAM | cut -d- -f2-)\"\n" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+fi
+
+  # Resume the rest
+  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 if [ -z "\$ARCH" ]; then
   case "\$( uname -m )" in
     i?86) ARCH=i586 ;;
@@ -569,23 +842,40 @@ function gen_slackdesc() {
 
   # Check to see if the short description made it too long
   if [ $(( ${#PRGNAM} + ${#SHORTDESC} )) -gt "67" ]; then
-    echo -e "\nWARNING: The \"$SHORTDESC\" short description is too long. Please edit slack-desc/README manually.\n"
+    echo -e "\n\t=======================================================================\n"
+    echo -e "\tWARNING: The \"$SHORTDESC\" short description is too long.\n"
+    echo -e "\tPlease edit slack-desc/README manually.\n"
+    echo -e "\t=======================================================================\n"
+    sleep 2
   fi
 
   # If $LONGDESC is yes, then let's prep it to be put in the slack-desc and README
   if [ "$LONGDESC" == "yes" ]; then
 
     # Prompt for the text
-    echo "Prompting for long description in slack-desc."
-    echo -n "Please paste the text here followed by 'enter' and Ctrl+d: "
+    echo "Prompting for long description in slack-desc..."
+    echo "Please paste the text here followed by 'enter' and Ctrl+d: "
     # Bring in the text with fmt and shrink it to 71 characters per line, use sed to remove
     # and extra line breaks, and then use sed again to add $PRGNAM in front
     LONGDESC="$(fmt -w 71 | sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba' | sed "s|^|$PRGNAM: |g")"
+    # Remove the trailing space if the line is empty
+    LONGDESC=$(echo "$LONGDESC" | sed "s|^$PRGNAM: $|$PRGNAM:|g")
     LINECNT=$(echo "$LONGDESC" | wc -l)
+
+    # Give us a blank line
+    echo
+
+  # If $LONGDESC is blank, then let's add enough entries to put the HOMEPAGE
+  # on the second to last line of the slack-desc (purely cosmetic placement)
+  else
+    until [ "$LINECNT" -eq "6" ]; do
+      LONGDESC=$(echo -e "$LONGDESC\n$PRGNAM:")
+      LINECNT=$(echo "$LONGDESC" | wc -l)
+    done
   fi
 
   # Add the homepage if there's enough room
-  if [ "$LINECNT" -lt "8" ] && [ "${#HOMEPAGE}" -lt "62" ]; then
+  if [ "$LINECNT" -lt "8" ] && [ -n "${HOMEPAGE}" ] && [ "${#HOMEPAGE}" -lt "62" ]; then
     LONGDESC=$(echo -e "$LONGDESC\n$PRGNAM:\n$PRGNAM: HOMEPAGE: $HOMEPAGE")
     LINECNT=$(echo "$LONGDESC" | wc -l)
   fi
@@ -636,7 +926,7 @@ function other() {
 }
 
 SBintro
-case $1 in
+case $SCRIPTNUM in
   1 ) SBextract; SBautotools; SBstrip_docs
       ;;
   2 ) SBextract; SBpython; SBstrip_docs
