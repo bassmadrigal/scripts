@@ -442,6 +442,11 @@ sleep 4
 # (I kept forgetting which source I used when I went to delete)
 realpath "$SRC" > "$DEST"/000-SOURCE.txt
 
+# Let's add subdirectories, just in case I combined multiple folders
+if [ "$(find "$SRC" -type d -mindepth 1 -printf '1'  | wc -c)" -ge "1" ]; then
+  find "$SRC" -type d -maxdepth 1 | sort >> "$DEST"/000-SOURCE.txt
+fi
+
 # If history is enabled, save the folders
 if [ "$SAVEHIST" == "yes" ]; then
   {
