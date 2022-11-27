@@ -191,7 +191,7 @@ final_stats()
     # Use UPorDOWN set below to determine whether the size was reduced (common)
     # or increased (rare). Use the period as a delimeter so we can have the same
     # echo statement for both.
-    echo "${UPorDOWN%.*} total size by $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)%, ${UPorDOWN#*.} $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
+    echo "${UPorDOWN%.*} total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, ${UPorDOWN#*.} $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
     # Only display subs added if subs were actually added.
     if [ "$SUBSADDED" -ge "1" ]; then
       echo "Added $SUBSADDED subtitle files into videos."
