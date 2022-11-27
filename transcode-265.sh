@@ -408,13 +408,14 @@ for FILE in "$SRC"/**; do
 
 done
 
-# If non-ascii characters were found, warn and then exit.
+# If non-ascii characters were found, warn, delete DEST folder, and then exit.
 if [ -n "$EXIT" ]; then
   echo -e "\n!=============================================================================!"
   echo "! The above file(s) contain non-ascii characters which are not supported by   !"
   echo "! this script. Please rename the files using only ascii characters and run    !"
   echo "! the script again. Thanks!                                                   !"
   echo "!=============================================================================!"
+  rmdir --ignore-fail-on-non-empty "$DEST"
   exit 1
 fi
 
