@@ -476,6 +476,9 @@ for FILE in "$SRC"/**; do
   # Catch bug in 14.2's file program wrongly detecting some mpg files as x-tga
   if ! file -i "$FILE" | grep -q -e video -e 'mpg\|mpeg'.*image/x-tga; then
     continue
+  # Catch the .sub of sub/idx subtitles being caught as a video
+  elif [ "${FILE##*.}" == "sub" ]; then
+    continue
   fi
 
   # Get just the filename without extension and current dir
