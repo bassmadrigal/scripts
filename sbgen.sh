@@ -25,6 +25,10 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.5.2 - 13 MAR 2023
+#          Add new python build method for packages that don't include a
+#          setup.py. Adds wheel & python3-installer dependencies to respective
+#          build scripts.
 # v0.5.1 - 13 MAR 2023
 #          Fix infinite loop when long description is more lines than a
 #          slack-desc allows
@@ -599,6 +603,10 @@ python2 setup.py install --root=\$PKG
 
 # For python3
 python3 setup.py install --root=\$PKG
+
+# For no setup.py (requires wheel & python3-installer as dependencies)
+python3 -m build --wheel --no-isolation
+python3 -m installer --destdir=$PKG dist/*.whl
 
 EOF
 }
