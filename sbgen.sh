@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2017-2022 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2017-2023 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,6 +25,9 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.5.1 - 13 MAR 2023
+#          Fix infinite loop when long description is more lines than a
+#          slack-desc allows
 # v0.5   - 30 APR 2022
 #          Add interactive mode to prompt for information instead of requiring
 #          passing commandline options
@@ -882,15 +885,15 @@ function gen_slackdesc() {
 
   # Finish off the slack-desc if required
   until [ "$LINECNT" -eq "9" ]; do
+    # Throw a warning if slack-desc ends up too long and tell them to fix it manually.
+    if [ "$LINECNT" -gt "9" ]; then
+      echo -e "\nWARNING: The long description was too long. slack-desc has $(($LINECNT-9)) line(s)"
+      echo -e "too many. Please manually correct slack-desc before building software.\n"
+      break
+    fi
     LONGDESC=$(echo -e "$LONGDESC\n$PRGNAM:")
     LINECNT=$(echo "$LONGDESC" | wc -l)
   done
-
-  # Throw a warning if slack-desc ends up too long and tell them to fix it manually.
-  if [ "$LINECNT" -gt "9" ]; then
-    echo -e "\nWARNING: The long description was too long. slack-desc has (($LINECNT-9)) line(s)"
-    echo -e "too many. Please manually correct slack-desc before building software.\n"
-  fi
 
   cat << EOF > ${SBOUTPUT}/slack-desc
 # HOW TO EDIT THIS FILE:
