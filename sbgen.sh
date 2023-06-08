@@ -25,6 +25,12 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.6   - 16 MAR 2023
+#          Add correction for github and pypi/python.org links that are
+#          directly copied from the sites. This means no more needing to
+#          correct github links to provide us with the correct filenames.
+#          It also replaces hashed links on pypi/python.org, which prevents
+#          my version-bump.sh script from working.
 # v0.5.2 - 13 MAR 2023
 #          Add new python build method for packages that don't include a
 #          setup.py. Adds wheel & python3-installer dependencies to respective
@@ -799,11 +805,62 @@ EOF
 echo "Created ${SBOUTPUT}/${PRGNAM}.SlackBuild"
 }
 
+# Try to correct for weird download links (github and pypi, I'm looking at you)
+function check_download() {
+
+  TESTURL="$1"
+  DOMAIN="$(echo "$TESTURL" | cut -d"/" -f 3)"
+
+  # If SRCNAM/SRCVER are not set, set them to PRGNAM/VERSION to simplify URLs
+  if [ -z "$SETSRCNAM" ]; then
+    SETSRCNAM="$PRGNAM"
+  fi
+  if [ -z "$SETSRCVER" ]; then
+    SETSRCVER="$VERSION"
+  fi
+
+  # Let's first prep github addresses
+  if [ "$DOMAIN" == "github.com" ]; then
+    OWNER=$(echo "$TESTURL" | cut -d"/" -f4)
+    PROJECT=$(echo "$TESTURL" | cut -d"/" -f5)
+
+    # Determine whether it's a commit or normal version
+    # Need to use bash's double brackets to support regex to catch commits
+    if [[ "$VERSION" =~ ^[a-fA-F0-9]{7}$ ]]; then
+      NEWURL="https://$DOMAIN/$OWNER/$PROJECT/archive/$VERSION/$SETSRCNAM-$SETSRCVER.tar.gz"
+    # Catch for releases, which can't use TAGVER in the else statement
+    elif [[ "$(echo $TESTURL | cut -d"/" -f6)" == "releases" ]]; then
+      NEWURL="$TESTURL"
+    else
+      # Extract the version from the URL to get the right tag
+      # (many include "v" in front of the version, v1.2.3 instead of just 1.2.3)
+      TAGVER=$(basename "$TESTURL" | rev | cut -d. -f3- | rev)
+      NEWURL="https://$DOMAIN/$OWNER/$PROJECT/archive/refs/tags/$TAGVER/$SETSRCNAM-$SETSRCVER.tar.gz"
+    fi
+
+  # If we're using a hashed python.org link, switch to a proper versioned link
+  elif [ "$DOMAIN" == "files.pythonhosted.org" ] || [ "$DOMAIN" == "pypi.python.org" ]; then
+    if [ "$(echo "$TESTURL" | cut -d"/" -f7 )" == "61" ]; then
+      NEWURL="https://files.pythonhosted.org/packages/source/${SETSRCNAM::1}/${SETSRCNAM}/${SETSRCNAM}-${SETSRCVER}.tar.gz"
+    else
+      NEWURL="$TESTURL"
+    fi
+
+  # Anything else, just ignore it.
+  # Can add future catches if needed
+  else
+    NEWURL="$TESTURL"
+  fi
+  echo "$NEWURL"
+}
+
 function info() {
 
 # Check for 32bit/universal download and update md5sum
 if [ -n "$DOWNLOAD" ] && [ -z $MD5SUM ]; then
 
+  # Make sure we're using the best download address
+  DOWNLOAD="$(check_download $DOWNLOAD)"
   # Download the source and save it in the SlackBuild directory
   echo "Downloading 32bit/universal source:"
   if ! wget -qP $SBOUTPUT/ $DOWNLOAD; then
@@ -817,6 +874,8 @@ fi
 # Check for 64bit download and update md5sum
 if [ -n "$DOWNLOAD64" ] && [ -z $MD5SUM64 ]; then
 
+  # Make sure we're using the best download address
+  DOWNLOAD64="$(check_download $DOWNLOAD64)"
   # Download the source and save it in the SlackBuild directory
   echo "Downloading 64bit source:"
   if ! wget -qP $SBOUTPUT/ $DOWNLOAD64; then
