@@ -25,6 +25,10 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.6.1 - 18 MAR 2023
+#          Correct required python dependency for scripts without a setup.py,
+#          escaped some missed special characters, and matched the makepkg
+#          command with upstream's template.
 # v0.6   - 16 MAR 2023
 #          Add correction for github and pypi/python.org links that are
 #          directly copied from the sites. This means no more needing to
@@ -610,9 +614,9 @@ python2 setup.py install --root=\$PKG
 # For python3
 python3 setup.py install --root=\$PKG
 
-# For no setup.py (requires wheel & python3-installer as dependencies)
+# For no setup.py (requires python3-build as dependency)
 python3 -m build --wheel --no-isolation
-python3 -m installer --destdir=$PKG dist/*.whl
+python3 -m installer --destdir=\$PKG dist/*.whl
 
 EOF
 }
@@ -643,16 +647,16 @@ function SBmeson () {
   cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
 mkdir build
 cd build
-  CFLAGS="\$SLKCFLAGS" \
-  CXXFLAGS="\$SLKCFLAGS" \
-  meson .. \
-    --buildtype=release \
-    --infodir=/usr/info \
-    --libdir=/usr/lib\${LIBDIRSUFFIX} \
-    --localstatedir=/var \
-    --mandir=/usr/man \
-    --prefix=/usr \
-    --sysconfdir=/etc \
+  CFLAGS="\$SLKCFLAGS" \\
+  CXXFLAGS="\$SLKCFLAGS" \\
+  meson .. \\
+    --buildtype=release \\
+    --infodir=/usr/info \\
+    --libdir=/usr/lib\${LIBDIRSUFFIX} \\
+    --localstatedir=/var \\
+    --mandir=/usr/man \\
+    --prefix=/usr \\
+    --sysconfdir=/etc \\
     -Dstrip=true
   "\${NINJA:=ninja}"
   DESTDIR=\$PKG \$NINJA install
@@ -799,7 +803,7 @@ cat \$CWD/slack-desc > \$PKG/install/slack-desc
 cat \$CWD/doinst.sh > \$PKG/install/doinst.sh
 
 cd \$PKG
-/sbin/makepkg -l y -c n \$OUTPUT/\$PRGNAM-\$VERSION-\$ARCH-\$BUILD\$TAG.\${PKGTYPE:-tgz}
+/sbin/makepkg -l y -c n \$OUTPUT/\$PRGNAM-\$VERSION-\$ARCH-\$BUILD\$TAG.\$PKGTYPE
 EOF
 
 echo "Created ${SBOUTPUT}/${PRGNAM}.SlackBuild"
