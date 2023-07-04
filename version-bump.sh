@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2020-2021 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2020-2023 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -31,6 +31,12 @@ else
   NEWVER="$1"
 fi
 
+# Let's set some colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+RESET='\033[0m' # Reset color
+
 # Set the program name based on the directory you're in
 PRGNAM=$(basename "$PWD")
 
@@ -44,17 +50,17 @@ fi
 
 # Change the version in the .info and .SlackBuild
 if [ "$VERSION" != "$NEWVER" ]; then
-  echo "Changing $PRGNAM's version from $VERSION to $NEWVER."
+  echo -e "Changing $PRGNAM's version from ${YELLOW}$VERSION${RESET} to ${GREEN}$NEWVER${RESET}."
   sed -i "s/$VERSION/$NEWVER/g" "$PRGNAM".info "$PRGNAM".SlackBuild
 else
-  echo "Looks like you're trying to change it to the same version."
+  echo -e "${RED}ERROR${RESET}: Looks like you're trying to change it to the same version."
   echo "Old version: $VERSION  | New version: $NEWVER"
   echo "Please check and try again"
   exit 1
 fi
 
 # Reset the build number since version was changed
-echo "Resetting the build number."
+echo -e "Resetting the build number to ${GREEN}1${RESET}."
 sed -i 's|${BUILD:-.*}|${BUILD:-1}|' "$PRGNAM".SlackBuild
 
 # Source the updated .info so we can check the downloads
@@ -72,11 +78,13 @@ if [ "$DOWNLOAD" ] && [ "$DOWNLOAD" != "UNSUPPORTED" ]; then
     # Download if the file doesn't already exist
     if [ ! -f "$(basename "$i")" ]; then
       if ! wget "$i"; then
-        echo "Download for $i failed. Please check link and update manually."
+        echo -e "${RED}ERROR${RESET}: Download for $i failed. Please check link and update manually."
         exit 1
+      else
+        echo -e "${GREEN}Success${RESET}: Downloaded $(basename "$i")."
       fi
     else
-      echo "File already exists. Won't redownload."
+      echo -e "${YELLOW}NOTICE${RESET}: File $(basename $i) already exists. Won't redownload."
     fi
     # If it's the first file, set the variable, otherwise, add to it
     if [ -z "$NEWMD5" ]; then
@@ -96,11 +104,13 @@ if [ "$DOWNLOAD_x86_64" ] && [ "$DOWNLOAD_x86_64" != "UNSUPPORTED" ]; then
     # Download if the file doesn't already exist
     if [ ! -f "$(basename "$i")" ]; then
       if ! wget "$i"; then
-        echo "Download for $i failed. Please check link and update manually."
+        echo -e "${RED}ERROR${RESET}: Download for $i failed. Please check link and update manually."
         exit 1
+      else
+        echo -e "${GREEN}Success${RESET}: Downloaded $(basename "$i")."
       fi
     else
-      echo "File already exists. Won't redownload."
+      echo -e "${YELLOW}NOTICE${RESET}: File already exists. Won't redownload."
     fi
     # If it's the first file, set the variable, otherwise, add to it
     if [ -z "$NEWMD5x64" ]; then
@@ -140,4 +150,4 @@ if ! grep -q $(date +"%Y") <<< $COPYRIGHT; then
   echo -e "================================WARNING================================\n"
 fi
 
-echo "Success! $PRGNAM was updated to version $VERSION."
+echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
