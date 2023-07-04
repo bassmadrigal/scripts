@@ -51,7 +51,9 @@ fi
 # Change the version in the .info and .SlackBuild
 if [ "$VERSION" != "$NEWVER" ]; then
   echo -e "Changing $PRGNAM's version from ${YELLOW}$VERSION${RESET} to ${GREEN}$NEWVER${RESET}."
-  sed -i "s/$VERSION/$NEWVER/g" "$PRGNAM".info "$PRGNAM".SlackBuild
+  # Need to escape any periods in the variables to prevent them from
+  # being treated as wildcards.
+  sed -i "s/$(echo $VERSION | sed 's|\.|\\.|g')/$(echo $NEWVER | sed 's|\.|\\.|g')/g" "$PRGNAM".info "$PRGNAM".SlackBuild
 else
   echo -e "${RED}ERROR${RESET}: Looks like you're trying to change it to the same version."
   echo "Old version: $VERSION  | New version: $NEWVER"
