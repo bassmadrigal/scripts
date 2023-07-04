@@ -123,24 +123,30 @@ if [ "$DOWNLOAD_x86_64" ] && [ "$DOWNLOAD_x86_64" != "UNSUPPORTED" ]; then
   done
 fi
 
-# Couldn't figure out how to keep the newlines in the updated MD5SUM
-# variables, so figured we could just brute force it. Easy peasy.
+# Couldn't figure out how to keep the newlines in the updated DOWNLOAD
+# and MD5SUM variables, so we will brute force it by combining multiple
+# spaces into one to process later. Not so easy peasy, but it works.
 {
   echo "PRGNAM=\"$PRGNAM\""
   echo "VERSION=\"$VERSION\""
   echo "HOMEPAGE=\"$HOMEPAGE\""
-  echo "DOWNLOAD=\"$DOWNLOAD\""
-  echo "MD5SUM=\"$NEWMD5\""
-  echo "DOWNLOAD_x86_64=\"$DOWNLOAD_x86_64\""
-  echo "MD5SUM_x86_64=\"$NEWMD5x64\""
+  echo "DOWNLOAD=\"$(echo $DOWNLOAD | tr -s ' ')\""
+  echo "MD5SUM=\"$(echo $NEWMD5 | tr -s ' ')\""
+  echo "DOWNLOAD_x86_64=\"$(echo $DOWNLOAD_x86_64 | tr -s ' ')\""
+  echo "MD5SUM_x86_64=\"$(echo $NEWMD5x64 | tr -s ' ')\""
   echo "REQUIRES=\"$REQUIRES\""
   echo "MAINTAINER=\"$MAINTAINER\""
   echo "EMAIL=\"$EMAIL\""
 } > "$PRGNAM".info
 
-# Switch all spaces to newlines to match SBo's .info template
-# Skip the REQUIRES, MAINTAINER, and EMAIL lines
-sed -Ei '/(REQUIRES|MAINTAINER|EMAIL)/!s| | \\\n|g' "$PRGNAM".info
+# Time to match SBo's .info template
+# Manually add a newline and the right number of spaces for the
+# variables that need it by swapping the spaces between downloads with
+# newlines and the right number of padded spaces for the .info.
+sed -Ei '/DOWNLOAD=/s| | \\\n          |g' $PRGNAM.info
+sed -Ei '/MD5SUM=/s| | \\\n        |g' $PRGNAM.info
+sed -Ei '/DOWNLOAD_x86_64=/s| | \\\n                 |g' $PRGNAM.info
+sed -Ei '/MD5SUM_x86_64=/s| | \\\n               |g' $PRGNAM.info
 
 # Check if the Copyright year contains the current year
 COPYRIGHT=$(grep Copyright "$PRGNAM".SlackBuild | tail -n1)
