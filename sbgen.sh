@@ -25,6 +25,9 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.6.2 - 17 MAY 2023
+#          Fix character counting for short description due to forgetting to
+#          count the colon when determining total character count.
 # v0.6.1 - 18 MAR 2023
 #          Correct required python dependency for scripts without a setup.py,
 #          escaped some missed special characters, and matched the makepkg
@@ -408,9 +411,9 @@ if [ "$PROMPT" == "yes" ]; then
       echo "Short description is too long."
       # Display the "handy ruler" to better show size requirements
       echo "|-----handy-ruler------------------------------------------------------|"
-      echo " $PRGNAM ($SHORTDESC)"
+      echo ": $PRGNAM ($SHORTDESC)"
       echo "Please try again (leave off the closing parenthesis)"
-      read -erp " $PRGNAM (" SHORTDESC
+      read -erp ": $PRGNAM (" SHORTDESC
 
     # Otherwise exit the loop
     else
