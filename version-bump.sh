@@ -151,11 +151,11 @@ sed -Ei '/MD5SUM_x86_64=/s| | \\\n               |g' $PRGNAM.info
 # Check if the Copyright year contains the current year
 COPYRIGHT=$(grep Copyright "$PRGNAM".SlackBuild | tail -n1)
 if ! grep -q $(date +"%Y") <<< $COPYRIGHT; then
-  echo -e "\n================================WARNING================================"
+  echo -e "\n================================${YELLOW}WARNING${RESET}================================"
   echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain this year's date.\n"
   echo -e "\t$COPYRIGHT\n"
   echo "Please check and consider updating."
-  echo -e "================================WARNING================================\n"
+  echo -e "================================${YELLOW}WARNING${RESET}================================\n"
 fi
 
 echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
