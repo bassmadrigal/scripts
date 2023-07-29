@@ -31,6 +31,17 @@ else
   NEWVER="$1"
 fi
 
+# Check if name is set in ~/.version-bump and if not, prompt for it
+if [ -e ~/.version-bump ]; then
+  source ~/.version-bump
+fi
+
+if [ -n "$NAME" ] && [ ! -e ~/.version-bump ]; then
+  echo "Your name is not set, so $(basename) can't check the copyright"
+  read -erp "for your info. Please type your name: " NAME
+  echo "NAME=\"$NAME\"" > ~/.version-bump
+fi
+
 # Let's set some colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -153,6 +164,15 @@ COPYRIGHT=$(grep Copyright "$PRGNAM".SlackBuild | tail -n1)
 if ! grep -q $(date +"%Y") <<< $COPYRIGHT; then
   echo -e "\n================================${YELLOW}WARNING${RESET}================================"
   echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain this year's date.\n"
+  echo -e "\t$COPYRIGHT\n"
+  echo "Please check and consider updating."
+  echo -e "================================${YELLOW}WARNING${RESET}================================\n"
+fi
+
+# Check if the user's name is included in the copyright
+if ! grep -q "$NAME" <<< $COPYRIGHT; then
+  echo -e "\n================================${YELLOW}WARNING${RESET}================================"
+  echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain your name.\n"
   echo -e "\t$COPYRIGHT\n"
   echo "Please check and consider updating."
   echo -e "================================${YELLOW}WARNING${RESET}================================\n"
