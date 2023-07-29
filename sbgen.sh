@@ -25,6 +25,9 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.6.3 - 3 JUN 2023
+#          Fix determining if a python source link is hashed and not using a
+#          proper versioned link.
 # v0.6.2 - 17 MAY 2023
 #          Fix character counting for short description due to forgetting to
 #          count the colon when determining total character count.
@@ -847,7 +850,9 @@ function check_download() {
 
   # If we're using a hashed python.org link, switch to a proper versioned link
   elif [ "$DOMAIN" == "files.pythonhosted.org" ] || [ "$DOMAIN" == "pypi.python.org" ]; then
-    if [ "$(echo "$TESTURL" | cut -d"/" -f7 )" == "61" ]; then
+    # Check if we're using a hashed url by seeing if the parent folder is
+    # 61 characters (the length of the hash)
+    if [ "$(echo "$TESTURL" | cut -d"/" -f7 | wc -c)" == "61" ]; then
       NEWURL="https://files.pythonhosted.org/packages/source/${SETSRCNAM::1}/${SETSRCNAM}/${SETSRCNAM}-${SETSRCVER}.tar.gz"
     else
       NEWURL="$TESTURL"
