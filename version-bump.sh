@@ -64,7 +64,7 @@ if [ "$VERSION" != "$NEWVER" ]; then
   echo -e "Changing $PRGNAM's version from ${YELLOW}$VERSION${RESET} to ${GREEN}$NEWVER${RESET}."
   # Need to escape any periods in the variables to prevent them from
   # being treated as wildcards.
-  sed -i "s/$(echo $VERSION | sed 's|\.|\\.|g')/$(echo $NEWVER | sed 's|\.|\\.|g')/g" "$PRGNAM".info "$PRGNAM".SlackBuild
+  sed -i "s|${VERSION//\./\\.}|${NEWVER//\./\\.}|g" "$PRGNAM".info "$PRGNAM".SlackBuild
 else
   echo -e "${RED}ERROR${RESET}: Looks like you're trying to change it to the same version."
   echo "Old version: $VERSION  | New version: $NEWVER"
@@ -74,7 +74,7 @@ fi
 
 # Reset the build number since version was changed
 echo -e "Resetting the build number to ${GREEN}1${RESET}."
-sed -i 's|${BUILD:-.*}|${BUILD:-1}|' "$PRGNAM".SlackBuild
+sed -i "s|\${BUILD:-.*}|\${BUILD:-1}|" "$PRGNAM".SlackBuild
 
 # Source the updated .info so we can check the downloads
 . "$PRGNAM".info
@@ -97,7 +97,7 @@ if [ "$DOWNLOAD" ] && [ "$DOWNLOAD" != "UNSUPPORTED" ]; then
         echo -e "${GREEN}Success${RESET}: Downloaded $(basename "$i")."
       fi
     else
-      echo -e "${YELLOW}NOTICE${RESET}: File $(basename $i) already exists. Won't redownload."
+      echo -e "${YELLOW}NOTICE${RESET}: File $(basename "$i") already exists. Won't redownload."
     fi
     # If it's the first file, set the variable, otherwise, add to it
     if [ -z "$NEWMD5" ]; then
@@ -141,10 +141,10 @@ fi
   echo "PRGNAM=\"$PRGNAM\""
   echo "VERSION=\"$VERSION\""
   echo "HOMEPAGE=\"$HOMEPAGE\""
-  echo "DOWNLOAD=\"$(echo $DOWNLOAD | tr -s ' ')\""
-  echo "MD5SUM=\"$(echo $NEWMD5 | tr -s ' ')\""
-  echo "DOWNLOAD_x86_64=\"$(echo $DOWNLOAD_x86_64 | tr -s ' ')\""
-  echo "MD5SUM_x86_64=\"$(echo $NEWMD5x64 | tr -s ' ')\""
+  echo "DOWNLOAD=\"$(echo "$DOWNLOAD" | tr -s ' ')\""
+  echo "MD5SUM=\"$(echo "$NEWMD5" | tr -s ' ')\""
+  echo "DOWNLOAD_x86_64=\"$(echo "$DOWNLOAD_x86_64" | tr -s ' ')\""
+  echo "MD5SUM_x86_64=\"$(echo "$NEWMD5x64" | tr -s ' ')\""
   echo "REQUIRES=\"$REQUIRES\""
   echo "MAINTAINER=\"$MAINTAINER\""
   echo "EMAIL=\"$EMAIL\""
@@ -154,28 +154,28 @@ fi
 # Manually add a newline and the right number of spaces for the
 # variables that need it by swapping the spaces between downloads with
 # newlines and the right number of padded spaces for the .info.
-sed -Ei '/DOWNLOAD=/s| | \\\n          |g' $PRGNAM.info
-sed -Ei '/MD5SUM=/s| | \\\n        |g' $PRGNAM.info
-sed -Ei '/DOWNLOAD_x86_64=/s| | \\\n                 |g' $PRGNAM.info
-sed -Ei '/MD5SUM_x86_64=/s| | \\\n               |g' $PRGNAM.info
+sed -Ei '/DOWNLOAD=/s| | \\\n          |g' "$PRGNAM".info
+sed -Ei '/MD5SUM=/s| | \\\n        |g' "$PRGNAM".info
+sed -Ei '/DOWNLOAD_x86_64=/s| | \\\n                 |g' "$PRGNAM".info
+sed -Ei '/MD5SUM_x86_64=/s| | \\\n               |g' "$PRGNAM".info
 
 # Check if the Copyright year contains the current year
 COPYRIGHT=$(grep Copyright "$PRGNAM".SlackBuild | tail -n1)
-if ! grep -q $(date +"%Y") <<< $COPYRIGHT; then
-  echo -e "\n================================${YELLOW}WARNING${RESET}================================"
+if ! grep -q "$(date +"%Y")" <<< "$COPYRIGHT"; then
+  echo -e "\n=============================${YELLOW}YEAR WARNING${RESET}==============================="
   echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain this year's date.\n"
   echo -e "\t$COPYRIGHT\n"
   echo "Please check and consider updating."
-  echo -e "================================${YELLOW}WARNING${RESET}================================\n"
+  echo -e "=============================${YELLOW}YEAR WARNING${RESET}===============================\n"
 fi
 
 # Check if the user's name is included in the copyright
-if ! grep -q "$NAME" <<< $COPYRIGHT; then
-  echo -e "\n================================${YELLOW}WARNING${RESET}================================"
+if ! grep -q "$NAME" <<< "$COPYRIGHT"; then
+  echo -e "\n=============================${YELLOW}NAME WARNING${RESET}==============================="
   echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain your name.\n"
   echo -e "\t$COPYRIGHT\n"
   echo "Please check and consider updating."
-  echo -e "================================${YELLOW}WARNING${RESET}================================\n"
+  echo -e "=============================${YELLOW}NAME WARNING${RESET}===============================\n"
 fi
 
 echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
