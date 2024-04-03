@@ -1,7 +1,33 @@
 #!/bin/bash
+#
+# Copyright 2023-2024 Jeremy Hansen <jebrhansen -at- gmail.com>
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#TODO
-# Add script to root of folders to allow easy secondary logins
+# Create a chroot from a maintained and updated Slackware stable base to allow
+# easy testing of SlackBuild scripts in a clean environment. Ensure that base
+# is updated every time this script is ran along with updating sbopkg and
+# running sqg to update all queues. Offer to remove chroot files when exiting
+# the chroot and, if passed "cleanup", remove any remaining chroot files.
+
+# TODO
+# Maybe add script to root of folders to allow easy secondary logins
 
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
