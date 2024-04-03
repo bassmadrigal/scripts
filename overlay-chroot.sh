@@ -62,7 +62,12 @@ touch $SLACKWARE_BASE/last-base-update
 
 # Make sure the base image is up-to-date
 if [ "$(head -n1 $LOCAL_MIRROR/ChangeLog.txt)" != "$(cat $SLACKWARE_BASE/last-base-update)" ]; then
-  ROOT=$SLACKWARE_BASE upgradepkg --install-new "$LOCAL_MIRROR"/patches/packages/*.t?z
+  for i in "$LOCAL_MIRROR"/patches/packages/*.t?z; do
+    if [ ! -e "$SLACKWARE_BASE"/var/lib/pkgtools/packages/"$(basename "${i%.*}")" ]; then
+      ROOT=$SLACKWARE_BASE upgradepkg --install-new "$i"
+    fi
+  done
+  echo "Slackware has been updated with local mirror."
   head -n1 $LOCAL_MIRROR/ChangeLog.txt > $SLACKWARE_BASE/last-base-update
 else
   echo "Slackware is up-to-date with the local mirror."
