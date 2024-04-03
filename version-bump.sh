@@ -167,6 +167,7 @@ if ! grep -q "$(date +"%Y")" <<< "$COPYRIGHT"; then
   echo -e "\t$COPYRIGHT\n"
   echo "Please check and consider updating."
   echo -e "=============================${YELLOW}YEAR WARNING${RESET}===============================\n"
+  WARN=yes
 fi
 
 # Check if the user's name is included in the copyright
@@ -176,6 +177,14 @@ if ! grep -q "$NAME" <<< "$COPYRIGHT"; then
   echo -e "\t$COPYRIGHT\n"
   echo "Please check and consider updating."
   echo -e "=============================${YELLOW}NAME WARNING${RESET}===============================\n"
+  WARN=yes
+fi
+
+if [ "$WARN" == "yes" ]; then
+  read -erp "Would you like to edit the SlackBuild before continuing? Y/n " answer
+  if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+    $EDITOR "$PRGNAM".SlackBuild
+  fi
 fi
 
 echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
