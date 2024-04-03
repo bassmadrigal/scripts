@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#TODO
 # Add script to root of folders to allow easy secondary logins
 
 # Check that we're root
@@ -24,25 +25,25 @@ if [ "$1" == "cleanup" ]; then
 
     for j in dev proc sys; do
       if mountpoint -q "$i"/chroot/$j; then
-        printf "\tUnmounting $i/chroot/$j"
+        printf "\tUnmounting %s/chroot/%s\n" "$i" "$j"
         umount "$i"/chroot/$j
       fi
     done
 
     if mountpoint -q "$i"/chroot/etc/resolv.conf; then
-      printf "\tUnmounting $i/chroot/etc/resolv.conf"
+      printf "\tUnmounting %s/chroot/etc/resolv.conf\n" "$i"
       umount "$i"/chroot/etc/resolv.conf
     fi
 
     # umount overlayfs
     if mountpoint -q "$i"/chroot; then
-      printf "\tUnmounting $i/chroot/$j/chroot"
+      printf "\tUnmounting %s/chroot/%s/chroot\n" "$i" "$j"
       umount "$i"/chroot
     fi
 
       # Remove dirs
     if [ -d "$i" ]; then
-      printf "\tRemoving $i."
+      printf "\tRemoving %s.\n" "$i"
       rm -r "$i"
     fi
   done
