@@ -59,6 +59,32 @@ else
   exit 1
 fi
 
+# Check if we're in a git repo
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  ISGIT=yes
+  # Set the default branch
+  DEF_BRANCH=master
+  CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  # Check if we're in the default branch. If so, offer to change it
+  if [ "$DEF_BRANCH" == "$CUR_BRANCH" ]; then
+    echo -e "${YELLOW}WARNING:${RESET} You are currently on your default branch, $DEF_BRANCH."
+    git branch
+    read -erp "Do you want to switch to or create a new branch? Y/n " answer
+    if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+      read -erp "Enter name of new/existing branch: " newbranch
+      git checkout -B "$newbranch"
+      CUR_BRANCH=$newbranch
+    else
+      read -erp "Do you want to continue working on $DEF_BRANCH? y/N " answer
+      if ! /usr/bin/grep -qi "y" <<< "$answer"; then
+        exit 1
+      fi
+    fi
+  fi
+else
+  ISGIT=no
+fi
+
 # Change the version in the .info and .SlackBuild
 if [ "$VERSION" != "$NEWVER" ]; then
   echo -e "Changing $PRGNAM's version from ${YELLOW}$VERSION${RESET} to ${GREEN}$NEWVER${RESET}."
@@ -188,3 +214,50 @@ if [ "$WARN" == "yes" ]; then
 fi
 
 echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
+
+# Let's offer to run the SlackBuild and some tests
+echo -e "\nRunning sbolint on directory"
+sbolint .
+read -rp $'\nWould you like try running the SlackBuild? Y/n ' answer
+if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+  if ! sudo unshare -n sh "$PRGNAM".SlackBuild; then
+    echo "$PRGNAM.SlackBuild failed to run. Please correct manually."
+    exit 1
+  else
+    PKGNAM=$(PRINT_PACKAGE_NAME=yes sh "$PRGNAM".SlackBuild)
+    echo -e "Build successful. Running sbopkglint on \'$PKGNAM\'.\n"
+    sbopkglint /tmp/"$PKGNAM"
+    read -rp $'\nWould you like try upgrading to '"$PKGNAM"'? Y/n ' answer
+    if ! /usr/bin/grep -qi "n" <<< "$answer" && [ -e /tmp/"$PKGNAM" ]; then
+      sudo upgradepkg --reinstall /tmp/"$PKGNAM"
+      read -rp $'\nWould you like a bash shell to test the program? Y/n ' answer
+      if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+        echo "Type 'exit' to go back to end testing."
+        bash -l
+      fi
+    fi
+    CATEGORY=$(pwd | rev | cut -d/ -f2 | rev)
+    echo -e "\nThe following commit has been prepared:"
+    echo -e "\n\tgit commit -m \"$CATEGORY/$PRGNAM: Version bump to $VERSION\" .\n"
+    if [ "$ISGIT" == "yes" ]; then
+      read -rp "Would you like to commit that to the repo? Y/n " answer
+      if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+        git commit -m "$CATEGORY/$PRGNAM: Version bump to $VERSION" .
+
+        # If we made a commit, ask if we want to push it back to the remote repo
+        DEF_REMOTE=origin
+        read -rp $'\nWould you like to push that commit to your remote repo, '"\"$DEF_REMOTE\""'? Y/n ' answer
+        if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+          git push -f origin "$CUR_BRANCH"
+          if git checkout "$DEF_BRANCH"; then
+            echo -e "\nReturned to default branch, \"$DEF_BRANCH\".\n"
+          else
+            echo -e "\n\tERROR: Unable to return to default branch, \"$DEF_BRANCH\".\n"
+          fi
+        fi
+      fi
+    else
+      echo "You are not in a repo and cannot commit this change."
+    fi
+  fi
+fi
