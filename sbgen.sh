@@ -478,7 +478,7 @@ function SBintro() {
 
 # Slackware build script for $PRGNAM
 
-# Copyright $YEAR $NAME $EMAIL
+# Copyright $YEAR $NAME <$EMAIL>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
