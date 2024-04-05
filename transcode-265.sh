@@ -147,7 +147,7 @@ calc_time()
 }
 
 # Function to calculate the progress and estimated completion
-progress()
+old_progress()
 {
   ELAPSED_TIME=$1
   COMPLETED=$(echo "$COUNT+$FAILED" | bc)
@@ -165,7 +165,32 @@ progress()
     echo
   } > "$DEST"/000-ETA
   cat "$DEST"/000-ETA
+  echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')" >> "$DEST"/000-old-ETA
 
+}
+
+# Let's try a new progress feature based on frame count rather than how
+# much time has elapsed. This will help with directories that contain
+# shorter extras than stanard episodes.
+new_progress()
+{
+  ELAPSED_TIME=$1
+  COMPLETED=$(echo "$COUNT+$FAILED" | bc)
+  PERCENT=$(echo "(100*$countedFrames/$totalFrames)" | bc )
+  EST_REMAIN_SEC=$(printf "%.0f" "$(echo "scale=10; $ELAPSED_TIME/($countedFrames/$totalFrames)-$ELAPSED_TIME" | bc)")
+  EST_REMAIN=$(calc_time "$EST_REMAIN_SEC")
+
+  # Let's save the ETA info to a file so it can be checked remotely, then display the file.
+  {
+    echo "==============================================================================="
+    echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT files."
+    echo "Remaining Time: $EST_REMAIN"
+    echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')"
+    echo "==============================================================================="
+    echo
+  } > "$DEST"/000-ETA
+  cat "$DEST"/000-ETA
+  echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')" >> "$DEST"/000-new-ETA
 }
 
 print_global_stats()
@@ -192,7 +217,7 @@ final_stats()
   {
     echo
     echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
-    echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $totalFrames/$SECONDS" | bc)fps."
+    echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $countedFrames/$SECONDS" | bc)fps."
     echo "Intial size: $(numfmt --to=iec "$ORIGSIZE")"
     echo "Transcoded size: $(numfmt --to=iec "$NEWSIZE")"
     # Use UPorDOWN set below to determine whether the size was reduced (common)
@@ -205,6 +230,8 @@ final_stats()
     fi
   } >> "$DEST"/000-stats
   cat "$DEST"/000-stats
+  echo -e "\nFinal completion: $(date)" >> "$DEST"/000-old-ETA
+  echo -e "\nFinal completion: $(date)" >> "$DEST"/000-new-ETA
 }
 
 check_dir()
@@ -391,6 +418,7 @@ ORIGSIZE=0
 NEWSIZE=0
 FAILED=0
 FAILED_FILES=
+countedFrames=0
 totalFrames=0
 EXIT=
 ATTEMPTS=10
@@ -403,6 +431,7 @@ OLD_GLOBSTAR=$(shopt -p globstar)
 shopt -s globstar
 
 # Get total count of files
+# Also get number of frames to better determine estimated completion
 echo "Finding total filecount. Please wait..."
 for FILE in "$SRC"/**; do
 
@@ -418,6 +447,7 @@ for FILE in "$SRC"/**; do
   # But, if it's a subtitle, count it separately to present to the user.
   elif [ "${FILE##*.}" == "srt" ] && [ "$MERGESUBS" == "yes" ]; then
     ((SUBCOUNT+=1))
+    continue
   else
     # Optionally output any non-video files for debugging
     if [ "$DEBUG" == "yes" ]; then
@@ -436,6 +466,23 @@ for FILE in "$SRC"/**; do
     EXIT=yes
   fi
 
+  # Count total frames of all videos so we can better determine a proper
+  # completion estimate
+  # Don't caluclate frames if we're already exiting due to ascii characters
+  if [ "$EXIT" != "yes" ]; then
+    frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
+    # Check and make sure $frames is set and is only a number before we try and
+    # add it to totalFrames. Prevents a syntax error if $frames isn't a number.
+    if [ -n "${frames##*[!0-9]*}" ]; then
+      totalFrames=$((totalFrames+frames))
+    else
+      {
+        echo "Frame count could not be determined for $FILE"
+      }  >> "$DEST"/000-fail.log
+      frameErr="yes"
+    fi
+  fi
+
 done
 
 # If non-ascii characters were found, warn, delete DEST folder, and then exit.
@@ -447,6 +494,16 @@ if [ -n "$EXIT" ]; then
   echo "!=============================================================================!"
   rmdir --ignore-fail-on-non-empty "$DEST"
   exit 1
+fi
+
+# If $frameErr is set, offer the chance to exit before continuing.
+if [ "$frameErr" == "yes" ]; then
+  cat "$DEST"/000-fail.log
+  echo "Frame count was not determined for the above files. Transcoding may"
+  echo "fail for those files. This script will automatically continue after"
+  echo "10 seconds. If you want to stop to check/correct the files, please"
+  echo "press Ctrl+C now."
+  sleep 10
 fi
 
 # If subs were found, present the option to try and merge them.
@@ -555,15 +612,16 @@ for FILE in "$SRC"/**; do
   # Count frames so we can determine an average transcoding FPS.
   frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
   # Check and make sure $frames is set and is only a number before we try and
-  # add it to totalFrames. Prevents a syntax error if $frames isn't a number.
+  # add it to countedFrames. Prevents a syntax error if $frames isn't a number.
   if [ -n "${frames##*[!0-9]*}" ]; then
-    totalFrames=$((totalFrames+frames))
+    countedFrames=$((countedFrames+frames))
   else
     {
       echo "==============================================================================="
       echo "Could not calculate number of frames for: $FILE"
       echo "==============================================================================="
     } >> "$DEST"/000-fail.log
+    framechk=none
   fi
 
   # Set pipefail to ensure HandBrakeCLI failing works
@@ -648,7 +706,14 @@ for FILE in "$SRC"/**; do
   # Only show progress if we haven't reached the end
   # If we've reached the end, delete the 000-ETA file
   if ((COUNT+FAILED < TOTALCNT)); then
-    progress $SECONDS
+
+    # If we have a frame count, use the new progress option
+    if [ "$framechk" != "none" ]; then
+      new_progress $SECONDS
+    else
+      old_progress $SECONDS
+    fi
+
     # Allow progress to be seen before progressing
     sleep 5
   else
@@ -672,7 +737,7 @@ if [ "$SAVESTATS" == "yes" ]; then
   ((PERMNEW+=NEWSIZE))
   ((PERMRUNS+=1))
   ((PERMSECS+=SECONDS))
-  ((PERMFRAMES+=totalFrames))
+  ((PERMFRAMES+=countedFrames))
   ((PERMSUBS+=SUBSADDED))
 
   # Update the file
