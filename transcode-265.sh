@@ -93,6 +93,9 @@ description ()
    Subtitle files (srt only for now) are detected and the user is prompted on
    if they'd like merge them into the resulting mkv (doesn't currently work on
    mp4 output) if they can be matched to the correct video.
+
+   If video files are not being included, pass DEBUG=yes to the script and it
+   will save the filenames to \$DEST/non-video-files.txt with the mimetype.
 EOH
 }
 
@@ -419,6 +422,11 @@ for FILE in "$SRC"/**; do
       ((SUBCOUNT+=1))
     #fi
   else
+    # Optionally output any non-video files for debugging
+    if [ "$DEBUG" == "yes" ]; then
+      echo "$FILE" >> "$DEST"/non-video-files.txt
+      file -i "$FILE" >> "$DEST"/non-video-files.txt
+    fi
     continue
   fi
 
