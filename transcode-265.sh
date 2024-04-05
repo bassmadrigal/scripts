@@ -50,7 +50,7 @@ HISTLOC="${HISTLOC:-$SAVEFOL/transcode-history}"
 MERGESUBS="${MERGESUBS:-yes}"
 # ---------------------------Global Settings Ending----------------------------
 
-function help ()
+help ()
 {
   cat <<EOH
 -- Usage:
@@ -62,6 +62,13 @@ function help ()
    [ext]    - File format: mp4 or mkv              [optional]
    [preset] - HandBrake Preset                     [optional]
 
+EOH
+
+}
+
+description ()
+{
+  cat <<EOH
 -- Description:
    This script will take a directory and convert all video files within to the
    specified format using HandBrakeCLI and save them in the "output" directory.
@@ -86,10 +93,7 @@ function help ()
    Subtitle files (srt only for now) are detected and the user is prompted on
    if they'd like merge them into the resulting mkv (doesn't currently work on
    mp4 output) if they can be matched to the correct video.
-
 EOH
-  # Check if stats are enabled and print
-  print_global_stats
 }
 
 # Function to calculate the amount weeks, days, hours, minutes, and seconds
@@ -322,6 +326,23 @@ if [ "$SAVESTATS" == "yes" ]; then
 fi
 
 # Time to check our inputs
+
+# If no inputs, display full help with description and stats
+# Otherwise, go into the checks and display error and parameters
+if [ "$#" == "0" ]; then
+  help
+  description
+  # Check if stats are enabled and print
+  print_global_stats
+  exit 0
+fi
+
+# Don't display stats if they're just asking for help
+if [ "$1" == "help" ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+  help
+  description
+  exit 0
+fi
 
 # Check to see if they passed source and destination locations
 if [ -z "$SRC" ] || [ -z "$DEST" ]; then
