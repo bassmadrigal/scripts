@@ -198,7 +198,7 @@ final_stats()
     # Use UPorDOWN set below to determine whether the size was reduced (common)
     # or increased (rare). Use the period as a delimeter so we can have the same
     # echo statement for both.
-    echo "${UPorDOWN%.*} total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, ${UPorDOWN#*.} $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
+    echo "${UPorDOWN%.*} total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, ${UPorDOWN#*.} $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))." | sed 's|-||g'
     # Only display subs added if subs were actually added.
     if [ "$SUBSADDED" -ge "1" ]; then
       echo "Added $SUBSADDED subtitle files into videos."
@@ -702,7 +702,7 @@ elif [ "$COUNT" -ge 1 ] && [ "$NEWSIZE" -gt "$ORIGSIZE" ]; then
 
   # Make sure they see that files are bigger.
   echo "====$(basename "$0") failed to transcode files smaller than the original.===="
-  echo -e "File size \e[33mincreased\e[0m $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)% adding $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))."
+  echo -e "File size \e[33mincreased\e[0m $(echo "(100*$NEWSIZE/$ORIGSIZE)-100" | bc)% adding $(numfmt --to=iec -- $(((ORIGSIZE-NEWSIZE)*-1)))."
   echo -e "Please consider using the original files and discarding the transcoded files."
 
   # Print final stats from the transcoding
