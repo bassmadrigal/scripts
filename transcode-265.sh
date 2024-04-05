@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2021 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2021-2024  Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -144,7 +144,7 @@ calc_time()
     OUTPUT_TIME="${OUTPUT_TIME}${SEC}s"
   fi
   echo "$OUTPUT_TIME"
-  }
+}
 
 # Function to calculate the progress and estimated completion
 progress()
@@ -417,10 +417,7 @@ for FILE in "$SRC"/**; do
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
   # But, if it's a subtitle, count it separately to present to the user.
   elif [ "${FILE##*.}" == "srt" ] && [ "$MERGESUBS" == "yes" ]; then
-    #if [ -f "$(echo "${FILE%.*}".* | grep -v \\.srt$)" ]; then
-    #if find . -name "$(basename "${FILE%.*}")"* -not -name "*.srt" > /dev/null 2>&1; then
-      ((SUBCOUNT+=1))
-    #fi
+    ((SUBCOUNT+=1))
   else
     # Optionally output any non-video files for debugging
     if [ "$DEBUG" == "yes" ]; then
