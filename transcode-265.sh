@@ -408,6 +408,10 @@ for FILE in "$SRC"/**; do
   if file -i "$FILE" | grep -q -e video -e 'mpg\|mpeg'.*image/x-tga; then
     ((TOTALCNT+=1))
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
+  # Let's check manually for .ts files since some show up as non-video
+  elif [ "${FILE##*.}" == "ts" ]; then
+    ((TOTALCNT+=1))
+    ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
   # But, if it's a subtitle, count it separately to present to the user.
   elif [ "${FILE##*.}" == "srt" ] && [ "$MERGESUBS" == "yes" ]; then
     #if [ -f "$(echo "${FILE%.*}".* | grep -v \\.srt$)" ]; then
@@ -496,7 +500,10 @@ for FILE in "$SRC"/**; do
   # Don't try and convert if the file isn't a video
   # Catch bug in 14.2's file program wrongly detecting some mpg files as x-tga
   if ! file -i "$FILE" | grep -q -e video -e 'mpg\|mpeg'.*image/x-tga; then
-    continue
+    # Don't skip .ts files (some of which don't show as video)
+    if [ "${FILE##*.}" != "ts" ]; then
+      continue
+    fi
   # Catch the .sub of sub/idx subtitles being caught as a video
   elif [ "${FILE##*.}" == "sub" ]; then
     continue
