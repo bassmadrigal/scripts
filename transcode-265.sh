@@ -594,9 +594,9 @@ for FILE in "$SRC"/**; do
     elif [ -d "$fileDIR"/Subs ]; then
 
       # Check in a directory with the same name as the episode
-       if [ "$(ls "$fileDIR"/Subs/"$filename"/*English.srt | wc -l)" -ge "1" ]; then
-         SUBFILE="$(ls -S "$fileDIR"/Subs/"$filename"/*English.srt | head -n1)"
-       fi
+      if [ "$(find "$fileDIR/Subs/$filename" -iname '*English.srt' | wc -l)" -ge "1" ]; then
+        SUBFILE=$(du -b "$fileDIR/Subs/$filename/"*English.srt | sort -rn | cut -f2 | head -n1)
+      fi
 
     # May add more entries later if needed based on other directory/subtitle
     # structures I encounter
