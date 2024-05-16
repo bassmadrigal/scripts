@@ -533,7 +533,8 @@ sleep 4
 
 # Save the source location for easy future reference
 # (I kept forgetting which source I used when I went to delete)
-realpath "$SRC" > "$DEST"/000-SOURCE.txt
+# (Append just in case we're adding to the folder.)
+realpath "$SRC" >> "$DEST"/000-SOURCE.txt
 
 # Let's add subdirectories, just in case I combined multiple folders
 if [ "$(find "$SRC" -type d -mindepth 1 -printf '1'  | wc -c)" -ge "1" ]; then
