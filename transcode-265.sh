@@ -479,7 +479,9 @@ for FILE in "$SRC"/**; do
     else
       # Try the more robust, but much, much slower mediainfo
       frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
-      if [ -z "$frames" ]; then
+      if [ -n "${frames##*[!0-9]*}" ]; then
+        totalFrames=$((totalFrames+frames))
+      else
         {
           echo "Frame count could not be determined for $FILE"
         }  >> "$DEST"/000-fail.log
