@@ -475,7 +475,7 @@ for FILE in "$SRC"/**; do
   # Check for files containing non-ascii. It breaks the script (at
   # least on 14.2).
   if [[ "$FILE" = *[![:ascii:]]* ]]; then
-    echo "Contains Non-ASCII: $FILE"
+    echo "Contains Non-ASCII: $FILE" | grep --color='auto' -P '[^\x00-\x7F]'
     # Set the exit variable so we can find and display all files containing
     # non-ascii and then exit after the loop.
     EXIT=yes
