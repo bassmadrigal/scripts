@@ -282,6 +282,21 @@ check_file()
   fi
 }
 
+# Check that HandBrakeCLI is installed and not broken
+if ! which HandBrakeCLI &> /dev/null; then
+  echo "ERROR: HandBrake is not installed or within your \$PATH!"
+  echo "Please correct and try again."
+  exit 1
+else
+  HandBrakeCLI &> /dev/null
+  RETVAL=$?
+  if [ "$RETVAL" == "127" ]; then
+    echo -e "\nERROR: HandBrake is broken... likely because of updated libraries."
+    echo "You most likely need to recompile HandBrake to correct the issue."
+    exit 1
+  fi
+fi
+
 # mp4 extensions don't support our method of importing subs. They need to be
 # specially added using mov_text, which is very limited. This is not currently
 # supported as I prefer mkv files (but support may be added later).
