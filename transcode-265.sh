@@ -733,6 +733,7 @@ for FILE in "$SRC"/**; do
     # If we have a frame count, use the new progress option
     if [ "$framechk" != "none" ]; then
       new_progress $SECONDS
+      old_progress $SECONDS
     else
       old_progress $SECONDS
     fi
