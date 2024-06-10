@@ -472,10 +472,10 @@ for FILE in "$SRC"/**; do
     continue
   fi
 
-  # Check for files containing non-ascii. It breaks the script (at
-  # least on 14.2).
-  if [[ "$FILE" = *[![:ascii:]]* ]]; then
-    echo "Contains Non-ASCII: $FILE" | grep --color='auto' -P '[^\x00-\x7F]'
+  # Check for files containing non-ascii. It breaks the script (at least
+  # on 14.2). HandBrakeCLI does not support colons, so flag those too.
+  if echo "-> $FILE" | grep --color='auto' -P '[^\x00-\x7F]|\x3A'; then
+
     # Set the exit variable so we can find and display all files containing
     # non-ascii and then exit after the loop.
     EXIT=yes
@@ -510,9 +510,9 @@ done
 # If non-ascii characters were found, warn, delete DEST folder, and then exit.
 if [ -n "$EXIT" ]; then
   echo -e "\n!=============================================================================!"
-  echo "! The above file(s) contain non-ascii characters which are not supported by   !"
-  echo "! this script. Please rename the files using only ascii characters and run    !"
-  echo "! the script again. Thanks!                                                   !"
+  echo "! The above filename(s) contain non-ascii or colon characters, which are not  !"
+  echo "! supported by this script and/or HandBrake. Please rename the files using    !"
+  echo "! only ascii characters without colons and run the script again. Thanks!      !"
   echo "!=============================================================================!"
   rmdir --ignore-fail-on-non-empty "$DEST"
   exit 1
