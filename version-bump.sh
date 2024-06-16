@@ -99,8 +99,11 @@ else
 fi
 
 # Reset the build number since version was changed
-echo -e "Resetting the build number to ${GREEN}1${RESET}."
-sed -i "s|\${BUILD:-.*}|\${BUILD:-1}|" "$PRGNAM".SlackBuild
+BUILDNUM=$(grep ^BUILD "$PRGNAM".SlackBuild | awk -F[-\}] '{print $2}')
+if [ "$BUILDNUM" != "1" ]; then
+  echo -e "Resetting the build number from ${YELLOW}$BUILDNUM${RESET} to ${GREEN}1${RESET}."
+  sed -i "s|\${BUILD:-.*}|\${BUILD:-1}|" "$PRGNAM".SlackBuild
+fi
 
 # Source the updated .info so we can check the downloads
 . "$PRGNAM".info
