@@ -481,30 +481,6 @@ for FILE in "$SRC"/**; do
     EXIT=yes
   fi
 
-  # Count total frames of all videos so we can better determine a proper
-  # completion estimate
-  # Don't caluclate frames if we're already exiting due to ascii characters
-  if [ "$EXIT" != "yes" ]; then
-    # ffprobe is faster, but won't always have the framecount available
-    frames=$(ffprobe -show_streams -select_streams v:0 -hide_banner -v error -show_format -i file:/"$(realpath "$FILE")" | grep FRAMES | head -1 | cut -d'=' -f2)
-    # Check and make sure $frames is set and is only a number before we try and
-    # add it to totalFrames. Prevents a syntax error if $frames isn't a number.
-    if [ -n "${frames##*[!0-9]*}" ]; then
-      totalFrames=$((totalFrames+frames))
-    else
-      # Try the more robust, but much, much slower mediainfo
-      frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
-      if [ -n "${frames##*[!0-9]*}" ]; then
-        totalFrames=$((totalFrames+frames))
-      else
-        {
-          echo "Frame count could not be determined for $FILE"
-        }  >> "$DEST"/000-fail.log
-        frameErr="yes"
-      fi
-    fi
-  fi
-
 done
 
 # If non-ascii characters were found, warn, delete DEST folder, and then exit.
@@ -517,6 +493,51 @@ if [ -n "$EXIT" ]; then
   rmdir --ignore-fail-on-non-empty "$DEST"
   exit 1
 fi
+
+# Count total frames of all videos so we can better determine a proper
+# completion estimate and show percentage complete during loop
+echo "Found $TOTALCNT files. Processing for ETA calculation..."
+currCOUNT=0
+for FILE in "$SRC"/**; do
+
+# Only count and check if it's a video file
+  # Catch bug in 14.2's file program wrongly detecting some mpg files as x-tga
+  if ! file -i "$FILE" | grep -q -e video -e 'mpg\|mpeg'.*image/x-tga; then
+    # Let's check manually for .ts files since some show up as non-video
+    if [ "${FILE##*.}" != "ts" ]; then
+      continue
+    fi
+  fi
+
+  # Catch the .sub of sub/idx subtitles being caught as a video
+  if [ "${FILE##*.}" == "sub" ]; then
+    continue
+  fi
+
+  # ffprobe is faster, but won't always have the framecount available
+  frames=$(ffprobe -show_streams -select_streams v:0 -hide_banner -v error -show_format -i file:/"$(realpath "$FILE")" | grep FRAMES | head -1 | cut -d'=' -f2)
+  # Check and make sure $frames is set and is only a number before we try and
+  # add it to totalFrames. Prevents a syntax error if $frames isn't a number.
+  if [ -n "${frames##*[!0-9]*}" ]; then
+    totalFrames=$((totalFrames+frames))
+  else
+    # Try the more robust, but much, much slower mediainfo
+    frames=$(mediainfo --Inform='Video;%FrameCount%' "$FILE")
+    if [ -n "${frames##*[!0-9]*}" ]; then
+      totalFrames=$((totalFrames+frames))
+    else
+      {
+        echo "Frame count could not be determined for $FILE"
+      }  >> "$DEST"/000-fail.log
+      frameErr="yes"
+    fi
+  fi
+  ((currCOUNT+=1))
+  printf "\r$((100*currCOUNT/TOTALCNT))%% complete"
+
+done
+printf "\rProcessing complete.\n"
+unset currCOUNT
 
 # If $frameErr is set, offer the chance to exit before continuing.
 if [ "$frameErr" == "yes" ]; then
