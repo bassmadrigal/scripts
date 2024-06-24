@@ -453,6 +453,10 @@ for FILE in "$SRC"/**; do
   # Only count and check if it's a video file
   # Catch bug in 14.2's file program wrongly detecting some mpg files as x-tga
   if file -i "$FILE" | grep -q -e video -e 'mpg\|mpeg'.*image/x-tga; then
+    # Catch the .sub of sub/idx subtitles being caught as a video
+    if [ "${FILE##*.}" == "sub" ]; then
+      continue
+    fi
     ((TOTALCNT+=1))
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
   # Let's check manually for .ts files since some show up as non-video
