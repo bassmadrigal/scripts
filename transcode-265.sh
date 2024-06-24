@@ -282,19 +282,30 @@ check_file()
   fi
 }
 
-# Check that HandBrakeCLI is installed and not broken
-if ! which HandBrakeCLI &> /dev/null; then
-  echo "ERROR: HandBrake is not installed or within your \$PATH!"
-  echo "Please correct and try again."
-  exit 1
-else
-  HandBrakeCLI &> /dev/null
-  RETVAL=$?
-  if [ "$RETVAL" == "127" ]; then
-    echo -e "\nERROR: HandBrake is broken... likely because of updated libraries."
-    echo "You most likely need to recompile HandBrake to correct the issue."
-    exit 1
+# Check for required programs and error out if they aren't installed or
+# are broken with an exit code of 127 (file not found, usually due to
+# broken libraries after an ABI update
+for i in HandBrakeCLI mediainfo ffplay; do
+  if ! which $i &> /dev/null; then
+    echo "ERROR: $i is not installed or within your \$PATH!"
+    echo "Please correct and try again."
+    MISSING=yes
+  else
+    ERRMSG=$($i 2>&1)
+    RETVAL=$?
+    if [ "$RETVAL" == "127" ]; then
+      echo -e "\nERROR: $i is broken... likely because of updated libraries."
+      echo "You most likely need to recompile $i to correct the issue."
+      echo "It failed with the following error:"
+      echo "$ERRMSG"
+      BROKEN=yes
+    fi
   fi
+done
+
+# If the above loop found missing or broken packages, exit
+if [ "$MISSING" == "yes" ] || [ "$BROKEN" == "yes" ]; then
+  exit 1
 fi
 
 # mp4 extensions don't support our method of importing subs. They need to be
