@@ -25,6 +25,8 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.6.4 - 2 APR 2024
+#          Add brackets around email in SlackBuild copyright header.
 # v0.6.3 - 3 JUN 2023
 #          Fix determining if a python source link is hashed and not using a
 #          proper versioned link.
