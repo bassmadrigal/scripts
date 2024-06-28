@@ -94,8 +94,10 @@ if [ "$VERSION" != "$NEWVER" ]; then
 else
   echo -e "${RED}ERROR${RESET}: Looks like you're trying to change it to the same version."
   echo "Old version: $VERSION  | New version: $NEWVER"
-  echo "Please check and try again"
-  exit 1
+  read -erp "Would you like to continue? y/N " answer
+  if ! /usr/bin/grep -qi "y" <<< "$answer"; then
+    exit 1
+  fi
 fi
 
 # Reset the build number since version was changed
