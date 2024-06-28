@@ -228,7 +228,7 @@ if ! /usr/bin/grep -qi "n" <<< "$answer"; then
     exit 1
   else
     PKGNAM=$(PRINT_PACKAGE_NAME=yes sh "$PRGNAM".SlackBuild)
-    echo -e "Build successful. Running sbopkglint on \'$PKGNAM\'.\n"
+    echo -e "Build successful. Running sbopkglint on '$PKGNAM'.\n"
     sbopkglint /tmp/"$PKGNAM"
     read -rp $'\nWould you like try upgrading to '"$PKGNAM"'? Y/n ' answer
     if ! /usr/bin/grep -qi "n" <<< "$answer" && [ -e /tmp/"$PKGNAM" ]; then
