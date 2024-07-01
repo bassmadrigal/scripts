@@ -530,7 +530,7 @@ for FILE in "$SRC"/**; do
   fi
 
   # ffprobe is faster, but won't always have the framecount available
-  frames=$(ffprobe -show_streams -select_streams v:0 -hide_banner -v error -show_format -i file:/"$(realpath "$FILE")" | grep FRAMES | head -1 | cut -d'=' -f2)
+  frames=$(ffprobe -show_streams -select_streams v:0 -hide_banner -v error -show_format -i file:/"$(realpath "$FILE")" 2> /dev/null | grep FRAMES | head -1 | cut -d'=' -f2)
   # Check and make sure $frames is set and is only a number before we try and
   # add it to totalFrames. Prevents a syntax error if $frames isn't a number.
   if [ -n "${frames##*[!0-9]*}" ]; then
