@@ -27,7 +27,7 @@
 # the chroot and, if passed "cleanup", remove any remaining chroot files.
 
 # TODO
-# Maybe add script to root of folders to allow easy secondary logins
+# Currently empty
 
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
@@ -133,12 +133,22 @@ if [ -e "$SLACKWARE_BASE"/usr/sbin/sbopkg ]; then
   fi
 fi
 
+# Let's save the following in the root of the chroot structure to allow
+# the user to enter into that chroot from another prompt and/or if they
+# accidentally leave the chroot.
+# Then we'll just execute the file to actually enter the chroot.
+cat << EOH > "$TMPDIR"/start-chroot.sh
+#!/bin/bash
 # Time to actually chroot and do our work
 # Need to type 'exit' to leave the chroot and start the cleanup
 # Use custom PS1 so we know we're in the chroot
-echo "Entering chroot. Press type \"exit\" to exit it."
+echo "Entering chroot. Please type \"exit\" to exit it."
 echo "You can add files to the chroot by placing them in $TMPDIR/chroot/"
 chroot "$TMPDIR"/chroot env PS1="\[\e[41m\]\u\[\e[49m\]@\[\e[33m\]$(basename "$TMPDIR")\[\e[0m\]:\w$ " bash
+EOH
+
+# Start the chroot
+bash "$TMPDIR"/start-chroot.sh
 
 # Start cleanup
 
