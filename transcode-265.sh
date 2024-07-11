@@ -568,7 +568,6 @@ unset currCOUNT
 
 # If $frameErr is set, offer the chance to exit before continuing.
 if [ "$frameErr" == "yes" ]; then
-  cat "$DEST"/000-fail.log
   echo "Frame count was not determined for the above files. Transcoding may"
   echo "fail for those files. This script will automatically continue after"
   echo "10 seconds. If you want to stop to check/correct the files, please"
