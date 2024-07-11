@@ -25,6 +25,8 @@
 # ready for use (unlike downloading them directly from SBo).
 
 # Changelog:
+# v0.7.1 - 26 JUN 2024
+#          Clean-up coding inconsistencies and minor corrections.
 # v0.7   - 25 JUN 2024
 #          Add doinst.sh support.
 # v0.6.4 - 2 APR 2024
@@ -82,7 +84,7 @@
 # variables, or create a conf file (default set to $HOME/.sbgen.conf)
 
 CONFFILE=${CONFFILE:-"$HOME/.sbgen.conf"}
-[ -f ${CONFFILE} ] && source ${CONFFILE}
+[ -f "${CONFFILE}" ] && source "${CONFFILE}"
 
 NAME=${NAME:-Your name}
 EMAIL=${EMAIL:-Your email}
@@ -95,7 +97,7 @@ SBLOC=${SBLOC:-./slackbuilds}
 function help() {
   cat <<EOH
 -- Usage:
-   $(basename $0) [options] <1-$SCRIPTCNT> <program_name> <version> [category]
+   $(basename "$0") [options] <1-$SCRIPTCNT> <program_name> <version> [category]
 
 -- Option parameters  :
    -h                 :   This help.
@@ -182,7 +184,7 @@ do
         ;;
   esac
 done
-shift $(($OPTIND - 1))
+shift $((OPTIND - 1))
 
 # Display the help and exit if nothing is passed except -p
 if [ $# -eq 0 ] && [ "$PROMPT" != "yes" ]; then
@@ -192,7 +194,7 @@ fi
 
 # If PROMPT is set and script type, PRGNAM, and VERSION aren't passed, prompt
 # for them and CATEGORY
-if [ "$PROMPT" == "yes" ] && [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
+if [ "$PROMPT" == "yes" ] && [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
   # While loop to ensure proper category is set
   while true; do
     echo "Available script types:"
@@ -230,7 +232,7 @@ if [ "$PROMPT" == "yes" ] && [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
   read -erp "Please provide script category (optional): " CATEGORY
 
 # If PROMPT is not set, error out if three arguments aren't passed
-elif [ -z $1 ] || [ -z $2 ] || [ -z $3 ]; then
+elif [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
   echo -e "\n\tERROR: You must pass the script type, program name, and version.\n"
   help
   exit
@@ -251,7 +253,7 @@ fi
 SBOUTPUT="${SBLOC}/${CATEGORY}/${PRGNAM}"
 
 # Let's not overwrite an existing folder unless it is forced
-if [ -e $SBOUTPUT ] && [ "$PROMPT" == "yes" ]; then
+if [ -e "$SBOUTPUT" ] && [ "$PROMPT" == "yes" ]; then
   read -erp "$SBOUTPUT already exists. Would you like to overwrite it? y/N " answer
   # If it's a yes, set FORCE
   if /usr/bin/grep -qi "y" <<< "$answer"; then
@@ -260,8 +262,8 @@ if [ -e $SBOUTPUT ] && [ "$PROMPT" == "yes" ]; then
    echo "Please adjust parameters and try again."
    exit 1
   fi
-elif [ -e $SBOUTPUT ] && [ "${FORCE:-no}" != "yes" ]; then
-  echo "$SBOUTPUT already exists. To overwrite, use $(basename $0) -f"
+elif [ -e "$SBOUTPUT" ] && [ "${FORCE:-no}" != "yes" ]; then
+  echo "$SBOUTPUT already exists. To overwrite, use $(basename "$0") -f to override"
   exit 1
 fi
 
@@ -394,7 +396,7 @@ if [ "$PROMPT" == "yes" ]; then
     read -erp "Set separate source name (SRCNAM) variable (otherwise leave blank): " SETSRCNAM
   else
     echo -e "\nPerl scripts set SRCNAM automatically by removing the \"perl-\" from the PRGNAM."
-    echo "Leaving this to the defaults would have SRCNAM be \"$(printf $PRGNAM | cut -d- -f2-)\"."
+    echo "Leaving this to the defaults would have SRCNAM be \"$(echo "$PRGNAM" | cut -d- -f2-)\"."
     read -erp "Leave blank unless you want to override: " SETSRCNAM
     SRCorPRG="SRCNAM"
   fi
@@ -457,7 +459,7 @@ if [ -n "$SETSRCNAM" ] && [ "$SCRIPTNUM" -ne "4" ]; then
 # If a user manually set SRCNAM, ask them if they're sure they want to use it
 elif [ -n "$SETSRCNAM" ] && [ "$SCRIPTNUM" -eq "4" ]; then
   echo "Perl scripts set SRCNAM automatically by removing the \"perl-\" from the PRGNAM."
-  echo "You manually specified $SETSRCNAM when the script would set it to $(printf $PRGNAM | cut -d- -f2-)."
+  echo "You manually specified $SETSRCNAM when the script would set it to $(echo "$PRGNAM" | cut -d- -f2-)."
   read -erp "Would you like to keep your manually set name? y/N " answer
   # If it's a yes, set SRCorPRG
   if /usr/bin/grep -qi "y" <<< "$answer"; then
@@ -467,7 +469,7 @@ elif [ -n "$SETSRCNAM" ] && [ "$SCRIPTNUM" -eq "4" ]; then
     SRCorPRG="PRGNAM"
   fi
 # If SETSRCNAM is not set for perl scripts, default to auto-setting it
-elif [ -z $SETSRCNAM ] && [ "$SCRIPTNUM" -eq "4" ]; then
+elif [ -z "$SETSRCNAM" ] && [ "$SCRIPTNUM" -eq "4" ]; then
   SRCorPRG="SRCNAM"
 # Otherwise assume they don't need SRCNAM
 else
@@ -483,10 +485,10 @@ fi
 
 function SBintro() {
 
-  mkdir -p $SBOUTPUT
+  mkdir -p "$SBOUTPUT"
 
   # Let's create the copyright header
-  cat << EOF > ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF > "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 #!/bin/bash
 
 # Slackware build script for $PRGNAM
@@ -515,7 +517,7 @@ EOF
   # Now we'll set up the section for variables, extracting the source, and
   # changing permissions.
 
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 cd \$(dirname \$0) ; CWD=\$(pwd)
 
 PRGNAM=$PRGNAM
@@ -524,14 +526,14 @@ EOF
 
   # Add SRCNAM and SRCVER if set
   if [ -n "$SETSRCNAM" ]; then
-    echo "SRCNAM=\${SRCNAM:-$SETSRCNAM}" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+    echo "SRCNAM=\${SRCNAM:-$SETSRCNAM}" >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
   fi
   if [ -n "$SETSRCVER" ]; then
-    echo "SRCVER=\${SRCVER:-$SETSRCVER}" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+    echo "SRCVER=\${SRCVER:-$SETSRCVER}" >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
   fi
 
   # Resume some more
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 BUILD=\${BUILD:-1}
 TAG=\${TAG:-_SBo}
 PKGTYPE=\${PKGTYPE:-tgz}
@@ -540,11 +542,11 @@ EOF
 
 # Add SRCNAM for perl scripts per the perl template
 if [ "$SCRIPTNUM" -eq "4" ] && [ -z "$SETSRCNAM" ]; then
-  echo -e "SRCNAM=\"\$(printf \$PRGNAM | cut -d- -f2-)\"\n" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  echo -e "SRCNAM=\"\$(printf \$PRGNAM | cut -d- -f2-)\"\n" >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 fi
 
   # Resume the rest
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 if [ -z "\$ARCH" ]; then
   case "\$( uname -m )" in
     i?86) ARCH=i586 ;;
@@ -586,7 +588,7 @@ EOF
 
 # Extract section with optional SRCNAM and SRCVER support
 function SBextract() {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 rm -rf \$${SRCorPRG}-\$${SRCorVER}
 tar xvf \$CWD/\$${SRCorPRG}-\$${SRCorVER}.tar.gz
 cd \$${SRCorPRG}-\$${SRCorVER}
@@ -602,7 +604,7 @@ EOF
 
 # 2179 autotools scripts
 function SBautotools() {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
 CXXFLAGS="\$SLKCFLAGS" \\
 ./configure \\
@@ -626,7 +628,7 @@ EOF
 # 848 python scripts
 function SBpython () {
   # This will automatically add python3 support. Please remove it if you don't want it.
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 # For python2
 python2 setup.py install --root=\$PKG
 
@@ -642,7 +644,7 @@ EOF
 
 #578 cmake scripts
 function SBcmake () {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 mkdir -p build
 cd build
   cmake \\
@@ -663,7 +665,7 @@ EOF
 
 # 58 meson scripts
 function SBmeson () {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 mkdir build
 cd build
   CFLAGS="\$SLKCFLAGS" \\
@@ -688,7 +690,7 @@ EOF
 
 # 551 perl scripts
 function SBperl () {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 # Build method #1 (preferred)
 perl Makefile.PL \\
   PREFIX=/usr \\
@@ -715,7 +717,7 @@ EOF
 
 # 328 haskell scripts
 function SBhaskell () {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 CFLAGS="\$SLKCFLAGS" \\
 CXXFLAGS="\$SLKCFLAGS" \\
 runghc Setup configure \\
@@ -741,7 +743,7 @@ EOF
 
 # 91 ruby scripts
 function SBruby () {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 
 DESTDIR=\$( ruby -r rbconfig -e '
 include RbConfig
@@ -794,7 +796,7 @@ EOF
 }
 
 function SBstrip_docs() {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 find \$PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \\
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
@@ -816,17 +818,17 @@ EOF
 }
 
 function SBclosing() {
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 mkdir -p \$PKG/install
 cat \$CWD/slack-desc > \$PKG/install/slack-desc
 EOF
 
 # Only add the line if doinst.sh was requested
 if [ "$DOINST" == "yes" ]; then
-  echo -e "cat \$CWD/doinst.sh > \$PKG/install/doinst.sh" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  echo -e "cat \$CWD/doinst.sh > \$PKG/install/doinst.sh" >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 
   # Add the doinst.sh file
-  cat << EOF > ${SBOUTPUT}/doinst.sh
+  cat << EOF > "${SBOUTPUT}"/doinst.sh
 # \$RCSfile: doinst.sh,v $
 # \$Revision: 1.9 $
 # \$Date: 2023-05-11 07:58:15+01 $
@@ -976,7 +978,7 @@ EOF
   echo "Please edit accordingly (maybe use sbopkglint for pointers)."
 fi
 
-  cat << EOF >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  cat << EOF >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 
 cd \$PKG
 /sbin/makepkg -l y -c n \$OUTPUT/\$PRGNAM-\$VERSION-\$ARCH-\$BUILD\$TAG.\$PKGTYPE
@@ -1009,7 +1011,7 @@ function check_download() {
     if [[ "$VERSION" =~ ^[a-fA-F0-9]{7}$ ]]; then
       NEWURL="https://$DOMAIN/$OWNER/$PROJECT/archive/$VERSION/$SETSRCNAM-$SETSRCVER.tar.gz"
     # Catch for releases, which can't use TAGVER in the else statement
-    elif [[ "$(echo $TESTURL | cut -d"/" -f6)" == "releases" ]]; then
+    elif [[ "$(echo "$TESTURL" | cut -d"/" -f6)" == "releases" ]]; then
       NEWURL="$TESTURL"
     else
       # Extract the version from the URL to get the right tag
@@ -1039,13 +1041,13 @@ function check_download() {
 function info() {
 
 # Check for 32bit/universal download and update md5sum
-if [ -n "$DOWNLOAD" ] && [ -z $MD5SUM ]; then
+if [ -n "$DOWNLOAD" ] && [ -z "$MD5SUM" ]; then
 
   # Make sure we're using the best download address
-  DOWNLOAD="$(check_download $DOWNLOAD)"
+  DOWNLOAD="$(check_download "$DOWNLOAD")"
   # Download the source and save it in the SlackBuild directory
   echo "Downloading 32bit/universal source:"
-  if ! wget -qP $SBOUTPUT/ $DOWNLOAD; then
+  if ! wget -qP "$SBOUTPUT"/ "$DOWNLOAD"; then
     echo "Download for $DOWNLOAD failed. Please check link and update manually."
   else
     echo "Generating MD5SUM"
@@ -1054,13 +1056,13 @@ if [ -n "$DOWNLOAD" ] && [ -z $MD5SUM ]; then
 fi
 
 # Check for 64bit download and update md5sum
-if [ -n "$DOWNLOAD64" ] && [ -z $MD5SUM64 ]; then
+if [ -n "$DOWNLOAD64" ] && [ -z "$MD5SUM64" ]; then
 
   # Make sure we're using the best download address
-  DOWNLOAD64="$(check_download $DOWNLOAD64)"
+  DOWNLOAD64="$(check_download "$DOWNLOAD64")"
   # Download the source and save it in the SlackBuild directory
   echo "Downloading 64bit source:"
-  if ! wget -qP $SBOUTPUT/ $DOWNLOAD64; then
+  if ! wget -qP "$SBOUTPUT"/ "$DOWNLOAD64"; then
     echo "64bit download for $DOWNLOAD64 failed. Please check link and update manually."
   else
     echo "Generating MD5SUM"
@@ -1068,7 +1070,7 @@ if [ -n "$DOWNLOAD64" ] && [ -z $MD5SUM64 ]; then
   fi
 fi
 
-  cat << EOF > ${SBOUTPUT}/$PRGNAM.info
+  cat << EOF > "${SBOUTPUT}"/"$PRGNAM".info
 PRGNAM="$PRGNAM"
 VERSION="$VERSION"
 HOMEPAGE="$HOMEPAGE"
@@ -1087,7 +1089,7 @@ echo "Created ${SBOUTPUT}/${PRGNAM}.info"
 function gen_slackdesc() {
   # Get PRGNAM's character count so we can pad the handy ruler
   PADNUM=${#PRGNAM}
-  PADDING=$(printf "%*s%s" $PADNUM)
+  PADDING=$(printf "%*s" "$PADNUM")
 
   # Set default short description if not set above
   SHORTDESC=${SHORTDESC:-"short description of app"}
@@ -1136,7 +1138,7 @@ function gen_slackdesc() {
   until [ "$LINECNT" -eq "9" ]; do
     # Throw a warning if slack-desc ends up too long and tell them to fix it manually.
     if [ "$LINECNT" -gt "9" ]; then
-      echo -e "\nWARNING: The long description was too long. slack-desc has $(($LINECNT-9)) line(s)"
+      echo -e "\nWARNING: The long description was too long. slack-desc has $((LINECNT-9)) line(s)"
       echo -e "too many. Please manually correct slack-desc before building software.\n"
       break
     fi
@@ -1144,7 +1146,7 @@ function gen_slackdesc() {
     LINECNT=$(echo "$LONGDESC" | wc -l)
   done
 
-  cat << EOF > ${SBOUTPUT}/slack-desc
+  cat << EOF > "${SBOUTPUT}"/slack-desc
 # HOW TO EDIT THIS FILE:
 # The "handy ruler" below makes it easier to edit a package description.
 # Line up the first '|' above the ':' following the base package name, and
@@ -1160,21 +1162,21 @@ EOF
 
   echo "Created ${SBOUTPUT}/slack-desc"
 
-  # Let's cheat and copy the use the slack-desc for the base README
-  tail -n 11 ${SBOUTPUT}/slack-desc | sed "s/$PRGNAM: //g" | sed "s/$PRGNAM://g" > ${SBOUTPUT}/README
+  # Let's cheat and copy the slack-desc for the base README
+  tail -n 11 "${SBOUTPUT}"/slack-desc | sed "s/$PRGNAM: //g" | sed "s/$PRGNAM://g" > "${SBOUTPUT}"/README
 
   # Remove the HOMEPAGE line if it exists
-  sed -i '/HOMEPAGE: /d' ${SBOUTPUT}/README
+  sed -i '/HOMEPAGE: /d' "${SBOUTPUT}"/README
 
   # Delete all trailing blank lines at end of README
   # http://sed.sourceforge.net/sed1line.txt
-  sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' ${SBOUTPUT}/README
+  sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' "${SBOUTPUT}"/README
 
   echo "Created ${SBOUTPUT}/README"
 }
 
 function other() {
-  echo -e "# Use this for manually creating package\n" >> ${SBOUTPUT}/$PRGNAM.SlackBuild
+  echo -e "# Use this for manually creating package\n" >> "${SBOUTPUT}"/"$PRGNAM".SlackBuild
 }
 
 SBintro
