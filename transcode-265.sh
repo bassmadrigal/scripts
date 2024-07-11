@@ -158,7 +158,7 @@ old_progress()
   # Let's save the ETA info to a file so it can be checked remotely, then display the file.
   {
     echo "==============================================================================="
-    echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT files."
+    echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT $(fileORfiles "$TOTALCNT")."
     echo "Remaining Time: $EST_REMAIN"
     echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')"
     echo "==============================================================================="
@@ -183,7 +183,7 @@ new_progress()
   # Let's save the ETA info to a file so it can be checked remotely, then display the file.
   {
     echo "==============================================================================="
-    echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT files."
+    echo "${PERCENT}% completed. $COMPLETED of $TOTALCNT $(fileORfiles "$TOTALCNT")."
     echo "Remaining Time: $EST_REMAIN"
     echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')"
     echo "==============================================================================="
@@ -197,13 +197,13 @@ print_global_stats()
 {
   if [ "$SAVESTATS" == "yes" ] && [ "$PERMRUNS" -gt "0" ]; then
     echo -e "\n==============================Global stats=============================="
-    echo "This script has converted $PERMCNT total files over the course of $PERMRUNS runs."
+    echo "This script has converted $PERMCNT total $(fileORfiles "$PERMCNT") over the course of $PERMRUNS runs."
     echo "It has run a total of $(calc_time "$PERMSECS") averaging $(echo "scale=2; $PERMFRAMES/$PERMSECS" | bc)fps."
     echo "Initial total size: $(numfmt --to=iec "$PERMORIG")"
     echo "Transcoded total size: $(numfmt --to=iec "$PERMNEW")"
     echo "Reduced the total size by $(echo "100-(100*$PERMNEW/$PERMORIG)" | bc)%, saving $(numfmt --to=iec -- $((PERMORIG-PERMNEW))) total space."
     echo "Average intial filesize of $(numfmt --to=iec -- $((PERMORIG/PERMCNT))) reduced to $(numfmt --to=iec -- $((PERMNEW/PERMCNT))) after transcoding."
-    echo "Added $PERMSUBS subtitle files into videos."
+    echo "Added $PERMSUBS subtitle $(fileORfiles "$PERMSUBS") into videos."
     echo "========================================================================"
   elif [ "$SAVESTATS" == "yes" ] && [ "$PERMRUNS" -eq "0" ]; then
     echo "No stats are available yet. Please check $STATLOC or transcode some files."
@@ -216,7 +216,7 @@ final_stats()
   # Useful to be able to see stats remotely or when 'screen' corrupts output
   {
     echo
-    echo "The script finished converting $COUNT file(s) from \"$(basename "$SRC")\"."
+    echo "The script finished converting $COUNT $(fileORfiles "$COUNT") from \"$(basename "$SRC")\"."
     echo "It finished at $(date) in $TOTALTIME, averaging $(echo "scale=2; $countedFrames/$SECONDS" | bc)fps."
     echo "Intial size: $(numfmt --to=iec "$ORIGSIZE")"
     echo "Transcoded size: $(numfmt --to=iec "$NEWSIZE")"
@@ -226,7 +226,7 @@ final_stats()
     echo "${UPorDOWN%.*} total size by $(echo "100-(100*$NEWSIZE/$ORIGSIZE)" | bc)%, ${UPorDOWN#*.} $(numfmt --to=iec -- $((ORIGSIZE-NEWSIZE)))." | sed 's|-||g'
     # Only display subs added if subs were actually added.
     if [ "$SUBSADDED" -ge "1" ]; then
-      echo "Added $SUBSADDED subtitle files into videos."
+      echo "Added $SUBSADDED subtitle $(fileORfiles "$SUBSADDED") into videos."
     fi
   } >> "$DEST"/000-stats
   cat "$DEST"/000-stats
@@ -280,6 +280,18 @@ check_file()
       return 1
     fi
   fi
+}
+
+# Function to determine whether to display singular or plural
+# Pass the variable to the function inside the echo statement
+# e.g. echo "There are $COUNT $(fileORfiles "$COUNT")."
+fileORfiles ()
+{
+    if [ "$1" -ne 1 ]; then
+        echo "files";
+    else
+        echo "file";
+    fi
 }
 
 # Check for required programs and error out if they aren't installed or
@@ -511,7 +523,7 @@ fi
 
 # Count total frames of all videos so we can better determine a proper
 # completion estimate and show percentage complete during loop
-echo "Found $TOTALCNT files. Processing for ETA calculation..."
+echo "Found $TOTALCNT $(fileORfiles "$TOTALCNT"). Processing for ETA calculation..."
 currCOUNT=0
 for FILE in "$SRC"/**; do
 
@@ -567,7 +579,7 @@ fi
 # If subs were found, present the option to try and merge them.
 if [ "$SUBCOUNT" -ge "1" ]; then
   echo -e "\n!===========================================================================!"
-  echo "$SUBCOUNT subtitle file(s) were found for $TOTALCNT video files."
+  echo "$SUBCOUNT subtitle $(fileORfiles "$SUBCOUNT") were found for $TOTALCNT video $(fileORfiles "$TOTALCNT")."
   echo -n "Would you like to add the subtitles into the video if a match is found? Y/n "
   read -r answer
   # If anything other than n, set SUBS to yes
@@ -581,7 +593,7 @@ if [ "$SUBCOUNT" -ge "1" ]; then
 fi
 
 # If only ascii characters were found, proceed with the transcoding.
-echo "Found $TOTALCNT file(s) totalling $(numfmt --to=iec $ORIGSIZE). Starting the transcoding..."
+echo "Found $TOTALCNT $(fileORfiles "$TOTALCNT") totalling $(numfmt --to=iec $ORIGSIZE). Starting the transcoding..."
 sleep 4
 
 # Save the source location for easy future reference
@@ -605,7 +617,7 @@ if [ "$SAVEHIST" == "yes" ]; then
       find "$SRC" -type d | sed "s|$SRC|      |g" | tail -n+2
     fi
     realpath "$DEST"
-    echo "Totalling $TOTALCNT files."
+    echo "Totalling $TOTALCNT $(fileORfiles "$TOTALCNT")."
     echo -e "=======================================\n"
   } >> "$HISTLOC"
 fi
@@ -838,7 +850,7 @@ fi
 # If anything failed, notify which file(s) and the location for the log
 if [ "$FAILED" -ge 1 ]; then
   echo -e "$FAILEDCMD" >> "$DEST"/000-fail.log
-  echo -e "\nThe following $FAILED file(s) failed to encode:$FAILED_FILES\n"
+  echo -e "\nThe following $FAILED $(fileORfiles "$FAILED") failed to encode:$FAILED_FILES\n"
   echo "Please see $DEST/000-fail.log for more details."
   echo "These are the transcoding commands for the failed files to manually run: "
   echo -e "$FAILEDCMD"
