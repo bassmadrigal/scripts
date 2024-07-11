@@ -20,6 +20,8 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# -----------------------------------------------------------------------------
+
 # Create a chroot from a maintained and updated Slackware stable base to allow
 # easy testing of SlackBuild scripts in a clean environment. Ensure that base
 # is updated every time this script is ran along with updating sbopkg and
@@ -28,6 +30,10 @@
 
 # TODO
 # Currently empty
+
+# -----------------------------------------------------------------------------
+
+# --------------------------Global Settings Beginning--------------------------
 
 # Set where you want the chroot located and the base name of the folder
 CHROOT_LOCATION=/tmp/
@@ -43,6 +49,8 @@ LOCAL_MIRROR=/share/gothrough/slackware-mirrors/slackware64-$VERSION/
 # security issues, but it is limited to non-network local connections.
 # Change to "no" if you want this disabled or pass REMOTE=no to the script.
 ACCESS=${ACCESS:-yes}
+
+# ---------------------------Global Settings Ending----------------------------
 
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
