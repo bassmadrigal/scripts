@@ -29,6 +29,18 @@ OLD_GLOBSTAR=$(shopt -p globstar)
 # Then ensure that globstar is set to match all files
 shopt -s globstar
 
+# Function to determine whether to display singular or plural
+# Pass the variable to the function inside the echo statement
+# e.g. echo "There are $COUNT $(fileORfiles $COUNT)."
+fileORfiles ()
+{
+    if [ "$1" -ne 1 ]; then
+        echo "files";
+    else
+        echo "file";
+    fi
+}
+
 for FOLDER in ./*; do
 
   TOTALCNT=0
@@ -70,7 +82,7 @@ for FOLDER in ./*; do
 
   done
   if [ "$TOTALCNT" -ne "0" ]; then
-    echo -e "$FOLDER contains \e[36m$TOTALCNT file(s)\e[0m totaling \e[33m$(numfmt --to=iec $TOTALSIZE)\e[0m. Average filesize is: \e[32m$(numfmt --to=iec $((TOTALSIZE/TOTALCNT)))\e[0m"
+    echo -e "$FOLDER contains \e[36m$TOTALCNT $(fileORfiles "$TOTALCNT")\e[0m totaling \e[33m$(numfmt --to=iec $TOTALSIZE)\e[0m. Average filesize is: \e[32m$(numfmt --to=iec $((TOTALSIZE/TOTALCNT)))\e[0m"
   else
     echo -e "$FOLDER \e[31mdoesn't contain video files\e[0m."
   fi
