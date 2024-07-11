@@ -29,14 +29,20 @@
 # TODO
 # Currently empty
 
+# Set where you want the chroot located and the base name of the folder
+CHROOT_LOCATION=/tmp/
+CHROOT_TEMPLATE_BASE="chroot"
+
+# Set variables for the base image and location of the local Slacwkare mirror
+VERSION=15.0
+SLACKWARE_BASE=/share/gothrough/sbo-build/$VERSION
+LOCAL_MIRROR=/share/gothrough/slackware-mirrors/slackware64-$VERSION/
+
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
   exit
 fi
-
-CHROOT_LOCATION=/tmp/
-CHROOT_TEMPLATE_BASE="chroot"
 
 # Provide an easy cleanup for older tmp files and exit
 if [ "$1" == "cleanup" ]; then
@@ -76,11 +82,6 @@ if [ "$1" == "cleanup" ]; then
   echo "Cleanup complete"
   exit
 fi
-
-# Set variables for the base image and location of the local Slacwkare mirror
-VERSION=15.0
-SLACKWARE_BASE=/share/gothrough/sbo-build/$VERSION
-LOCAL_MIRROR=/share/gothrough/slackware-mirrors/slackware64-$VERSION/
 
 # Track the latest updates to prevent attempting to update system
 # packages and rebuilding sbopkg's queues
