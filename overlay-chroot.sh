@@ -38,6 +38,12 @@ VERSION=15.0
 SLACKWARE_BASE=/share/gothrough/sbo-build/$VERSION
 LOCAL_MIRROR=/share/gothrough/slackware-mirrors/slackware64-$VERSION/
 
+# To allow you to open GUI programs from within the chroot, you need to
+# allow "remote" access to the x server. This could possibly open up
+# security issues, but it is limited to non-network local connections.
+# Change to "no" if you want this disabled or pass REMOTE=no to the script.
+ACCESS=${ACCESS:-yes}
+
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
@@ -132,6 +138,12 @@ if [ -e "$SLACKWARE_BASE"/usr/sbin/sbopkg ]; then
   else
     echo "sbopkg is up-to-date."
   fi
+fi
+
+# Checking if we can add local connection access
+if [ "$ACCESS" == "yes" ]; then
+  echo "Setting up X server access."
+  xhost +local:hosts
 fi
 
 # Let's save the following in the root of the chroot structure to allow
