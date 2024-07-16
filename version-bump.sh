@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2020-2023 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2020-2024 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -237,8 +237,18 @@ if ! /usr/bin/grep -qi "n" <<< "$answer"; then
       sudo upgradepkg --reinstall /tmp/"$PKGNAM"
       read -rp $'\nWould you like a bash shell to test the program? Y/n ' answer
       if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+        # We should let people know when they're in a subshell by modifying the
+        # PS1 variable. There have been times I've forgotten due to trying to
+        # fix things and this should solve that.
+        # However, for some (unknown to me) reason, the PS1 variable is not
+        # available in this script even though it's exported in the parent
+        # shell. So, we'll extract it from /etc/profile and set it.
+        PS1=$(grep PS1 /etc/profile | tail -2 | head -1 | cut -d\' -f2)
+        # Remove the escape, question mark, and space from PS1 so we can add
+        # it after we add the subshell text.
+        NEWPS1="${PS1//\\\$ /} \[\e[33m\](subshell)\[\e[0m\]$ "
         echo "Type 'exit' to go back to end testing."
-        bash -l
+        env PS1="$NEWPS1" bash --norc
       fi
     fi
     CATEGORY=$(pwd | rev | cut -d/ -f2 | rev)
