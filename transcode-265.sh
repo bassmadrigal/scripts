@@ -788,7 +788,9 @@ for FILE in "$SRC"/**; do
     # Allow progress to be seen before progressing
     sleep 5
   else
-    rm "$DEST"/000-ETA
+    if [ -f "$DEST"/000-ETA ]; then
+      rm "$DEST"/000-ETA
+    fi
   fi
 
 done
