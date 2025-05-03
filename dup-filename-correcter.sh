@@ -51,7 +51,7 @@ COUNT=0
 for FILE in "$SRC"/**; do
 
   # Check files for " - (#)" at the end of them, with "#" being any digit
-  if echo "$FILE" | grep -Eq " - \([[:digit:]]\)"; then
+  if echo "$FILE" | grep -Eq " - \([[:digit:]]+\)"; then
     FILENAME="$(basename "$FILE")"
     # Cut the extra fluff from the filename and add the extension back
     NEWNAME="$(echo "$FILENAME" | rev | cut -d' ' -f3- | rev ).${FILENAME##*.}"
