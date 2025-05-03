@@ -66,7 +66,7 @@ function check_download()
     # 61 characters (the length of the hash)
     if [ "$(echo "$TESTURL" | cut -d"/" -f7 | wc -c)" == "61" ]; then
       PROJECT="$(echo "$TESTURL" | cut -d"/" -f8 | cut -d- -f1)"
-      VERSION="$(echo "$TESTURL" | cut -d"/" -f8 | cut -d- -f2 | rev | cut -d"." -f3- )"
+      VERSION="$(echo "$TESTURL" | cut -d"/" -f8 | cut -d- -f2 | rev | cut -d"." -f3- | rev )"
       NEWURL="https://files.pythonhosted.org/packages/source/${PROJECT::1}/${PROJECT}/${PROJECT}-${VERSION}.tar.gz"
     else
       NEWURL="$TESTURL"
