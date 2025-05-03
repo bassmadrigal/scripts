@@ -58,7 +58,11 @@ for FILE in "$SRC"/**; do
     FILEPATH="$(dirname "$FILE")"
     # If the new filename doesn't already exist, move it
     if [ ! -f "$FILEPATH/$NEWNAME" ]; then
-      mv "$FILE" "$FILEPATH/$NEWNAME"
+      if mv "$FILE" "$FILEPATH/$NEWNAME"; then
+        echo "Renamed $FILE -> $FILEPATH/$NEWNAME"
+      else
+        echo "Failed to rename $FILE"
+      fi
       ((COUNT+=1))
     fi
   fi
