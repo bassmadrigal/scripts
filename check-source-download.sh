@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2023-2024 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2023-2025 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -78,8 +78,8 @@ function check_download()
     NEWURL="$TESTURL"
   fi
 
-  # Return our correct URL
-  echo "$NEWURL"
+  # Return our correct URL and remove any spaces that might've been added
+  echo "$NEWURL" | tr -d ' '
 }
 
 check_download "$1"
