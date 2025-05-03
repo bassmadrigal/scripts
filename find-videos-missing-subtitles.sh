@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2024 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2024-2025 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -24,8 +24,14 @@
 # Once I start using it more, I'll probably need to limit what video files it
 # searches since many don't support embedded subtitles.
 
+# Check if a directory was passed. If so, use it.
 if [ -n "$1" ]; then
-  SRC="$1"
+  if [ -d "$1" ]; then
+    SRC="$1"
+  else
+    echo "ERROR: Passed directory does not exist."
+    exit
+  fi
 else
   SRC="$(pwd)"
 fi
