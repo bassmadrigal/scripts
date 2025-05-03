@@ -24,12 +24,45 @@
 # Once I start using it more, I'll probably need to limit what video files it
 # searches since many don't support embedded subtitles.
 
+function help() {
+  cat <<EOH
+-- Usage:
+   $(basename "$0") [options] [directory]
+
+-- Option parameters  :
+   -h :   This help.
+   -r :   Find videos with subtitles.
+
+-- Description:
+   This script will search through subfolders to find videos that don't have
+   subtitles embedded (or with -r, find videos that do have subtitles
+   embedded).
+
+   It will start in the current directory unless you pass one to the script.
+EOH
+}
+
+while getopts ":hr" OPTION
+do
+  case $OPTION in
+    h ) help; exit
+        ;;
+    r ) REVERSE=yes
+        ;;
+    * ) echo "ERROR: Invalid option."
+        help; exit
+        ;;
+  esac
+done
+shift $((OPTIND - 1))
+
 # Check if a directory was passed. If so, use it.
 if [ -n "$1" ]; then
   if [ -d "$1" ]; then
     SRC="$1"
   else
     echo "ERROR: Passed directory does not exist."
+    help
     exit
   fi
 else
@@ -59,9 +92,16 @@ noSubCOUNT=0
 for FILE in "$SRC"/**; do
 
   if file -i "$FILE" | grep -q -e video; then
-    if ! mediainfo "$FILE" | grep -q ^Text; then
-      printf "\r%s\n" "$FILE"
-      ((noSubCOUNT+=1))
+    if [ "$REVERSE" == "yes" ]; then
+      if mediainfo "$FILE" | grep -q ^Text; then
+        printf "\r%s\n" "$FILE"
+        ((noSubCOUNT+=1))
+      fi
+    else
+      if ! mediainfo "$FILE" | grep -q ^Text; then
+        printf "\r%s\n" "$FILE"
+        ((noSubCOUNT+=1))
+      fi
     fi
 
   ((currCOUNT+=1))
@@ -69,7 +109,7 @@ for FILE in "$SRC"/**; do
   fi
 done
 
-printf "\rThere were %.0f files without subtitles.\n" "$noSubCOUNT"
+printf "\rThere were %.0f files with$(if [ "$REVERSE" != "yes" ]; then echo "out"; fi) subtitles out of %.0f files.\n" "$noSubCOUNT" "$totalCOUNT"
 
 # Reset globstar
 eval "$OLD_GLOBSTAR"
