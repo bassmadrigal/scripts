@@ -34,9 +34,14 @@
 
 # -----------------------------------------------------------------------------
 
-# If a directory is passed, use that, otherwise use the current dir
+# Check if a directory was passed. If so, use it.
 if [ -n "$1" ]; then
-  SRC="$1"
+  if [ -d "$1" ]; then
+    SRC="$1"
+  else
+    echo "ERROR: Passed directory does not exist."
+    exit
+  fi
 else
   SRC="$(pwd)"
 fi
