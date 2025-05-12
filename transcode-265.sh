@@ -36,10 +36,8 @@
 # -----------------------------------------------------------------------------
 
 # --------------------------Global Settings Beginning--------------------------
-SRC="$1"
-DEST="$2"
-EXT="${3:-mkv}"
-PRESET="${4:-H.265 MKV 1080p Sub}"
+DEFAULT_EXT="mkv"                     # Override using EXT=
+DEFAULT_PRESET="H.265 MKV 1080p Sub"  # Override using PRESET=
 
 SAVEFOL="${SAVEFOL:-$HOME/.transcode}"
 SAVESTATS="${SAVESTATS:-yes}"
@@ -79,7 +77,8 @@ description ()
 
    This script requires passing at least source and destination locations.
    File extension and preset can be pre-configured within the script, but can
-   be passed if you want to override the presets.
+   be passed if you want to override the presets as the 3rd and 4th arguments,
+   or by passing EXT= and/or PRESET= to the script.
 
    If global stats are enabled (SAVESTATS=yes), then they will be displayed at
    the bottom of the help output or when transcoding is complete. Save file
@@ -314,6 +313,12 @@ done
 if [ "$MISSING" == "yes" ] || [ "$BROKEN" == "yes" ]; then
   exit 1
 fi
+
+# Set our variables
+SRC="$1"
+DEST="$2"
+EXT="${3:-$DEFAULT_EXT}"
+PRESET="${4:-$DEFAULT_PRESET}"
 
 # mp4 extensions don't support our method of importing subs. They need to be
 # specially added using mov_text, which is very limited. This is not currently
