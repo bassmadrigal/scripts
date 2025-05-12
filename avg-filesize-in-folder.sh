@@ -24,6 +24,12 @@
 # files, and the average filesize of those video files to aid in determining
 # which to priotize for transcoding.
 
+# Pick your output type. Currently accepted options are:
+  # folder1st - Folder first, followed by count, total size, and avg filesize
+  # number1st - Count first, followed by total size, avg filesize, and folder
+  # csv - comma separated values to allow easily importing into a spreadsheet
+OUTPUTTYPE="${OUTPUTTYPE:-folder1st}"
+
 # Store shopt globstar option to potentially revert
 OLD_GLOBSTAR=$(shopt -p globstar)
 # Then ensure that globstar is set to match all files
@@ -40,6 +46,22 @@ fileORfiles ()
         echo "file";
     fi
 }
+
+# Prep the csv file and set the header
+if [ "$OUTPUTTYPE" == "csv" ]; then
+  read -erp "Please select filename (default: output.csv): " OUTPUTNAME
+  OUTPUTNAME="${OUTPUTNAME:-output.csv}"
+
+  # Add csv extension if it wasn't included
+  if grep -qi "\.csv" <<< $OUTPUTNAME; then OUTPUTNAME="${OUTPUTNAME}.csv"; fi
+
+  # If file exists, ask to overwrite it
+  if [ -e "$OUTPUTNAME" ]; then
+    read -erp "WARNING: $OUTPUTNAME exists. Do you want to overwrite it? Y/n :" answer
+    if grep -iq "n" <<< "$answer"; then exit 1; fi
+  fi
+  echo "Total files,Total size,Average size,Location" > $OUTPUTNAME
+fi
 
 for FOLDER in ./*; do
 
@@ -81,8 +103,12 @@ for FOLDER in ./*; do
     fi
 
   done
-  if [ "$TOTALCNT" -ne "0" ]; then
+  if [ "$TOTALCNT" -ne "0" ] && [ "$OUTPUTTYPE" == "folder1st" ]; then
     echo -e "$FOLDER contains \e[36m$TOTALCNT $(fileORfiles "$TOTALCNT")\e[0m totaling \e[33m$(numfmt --to=iec $TOTALSIZE)\e[0m. Average filesize is: \e[32m$(numfmt --to=iec $((TOTALSIZE/TOTALCNT)))\e[0m"
+  elif [ "$TOTALCNT" -ne "0" ] && [ "$OUTPUTTYPE" == "number1st" ]; then
+    echo -e "\e[36m$TOTALCNT $(fileORfiles "$TOTALCNT")\e[0m totaling \e[33m$(numfmt --to=iec $TOTALSIZE)\e[0m. Average filesize is: \e[32m$(numfmt --to=iec $((TOTALSIZE/TOTALCNT)))\e[0m -> $FOLDER"
+  elif [ "$TOTALCNT" -ne "0" ] && [ "$OUTPUTTYPE" == "csv" ]; then
+    echo "$TOTALCNT,$TOTALSIZE,$((TOTALSIZE/TOTALCNT)),\"$FOLDER\"" >> "$OUTPUTNAME"
   else
     echo -e "$FOLDER \e[31mdoesn't contain video files\e[0m."
   fi
