@@ -474,6 +474,9 @@ for FILE in "$SRC"/**; do
     # Catch the .sub of sub/idx subtitles being caught as a video
     if [ "${FILE##*.}" == "sub" ]; then
       continue
+    # Skip m4a files detected as video/mp4
+    elif [ "${FILE##*.}" == "m4a" ]; then
+      continue
     fi
     ((TOTALCNT+=1))
     ORIGSIZE=$((ORIGSIZE+$(du -b "$FILE" | cut -f1)))
@@ -536,12 +539,14 @@ for FILE in "$SRC"/**; do
     if [ "${FILE##*.}" != "ts" ] && [ "${FILE##*.}" != "mkv" ]; then
       continue
     fi
-  fi
-
   # Catch the .sub of sub/idx subtitles being caught as a video
-  if [ "${FILE##*.}" == "sub" ]; then
+  elif [ "${FILE##*.}" == "sub" ]; then
+    continue
+  # Catch .m4a being caught as video/mp4
+  elif [ "${FILE##*.}" == "m4a" ]; then
     continue
   fi
+
 
   # ffprobe is faster, but won't always have the framecount available
   frames=$(ffprobe -show_streams -select_streams v:0 -hide_banner -v error -show_format -i file:/"$(realpath "$FILE")" 2> /dev/null | grep FRAMES | head -1 | cut -d'=' -f2)
@@ -642,6 +647,9 @@ for FILE in "$SRC"/**; do
     fi
   # Catch the .sub of sub/idx subtitles being caught as a video
   elif [ "${FILE##*.}" == "sub" ]; then
+    continue
+  # Catch .m4a being caught as video/mp4
+  elif [ "${FILE##*.}" == "m4a" ]; then
     continue
   fi
 
