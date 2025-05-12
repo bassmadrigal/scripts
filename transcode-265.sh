@@ -503,6 +503,9 @@ for FILE in "$SRC"/**; do
     EXIT=yes
   fi
 
+  # Output our count
+  printf "\r%.0f $(fileORfiles "$TOTALCNT")" "$TOTALCNT"
+
 done
 
 # If non-ascii characters were found, warn, delete DEST folder, and then exit.
@@ -518,7 +521,7 @@ fi
 
 # Count total frames of all videos so we can better determine a proper
 # completion estimate and show percentage complete during loop
-echo "Found $TOTALCNT $(fileORfiles "$TOTALCNT"). Processing for ETA calculation..."
+printf "\rFound %s $(fileORfiles "$TOTALCNT"). Processing for ETA calculation...\n" "$TOTALCNT"
 currCOUNT=0
 for FILE in "$SRC"/**; do
 
@@ -563,10 +566,12 @@ unset currCOUNT
 
 # If $frameErr is set, offer the chance to exit before continuing.
 if [ "$frameErr" == "yes" ]; then
-  echo "Frame count was not determined for the above files. Transcoding may"
-  echo "fail for those files. This script will automatically continue after"
-  echo "10 seconds. If you want to stop to check/correct the files, please"
-  echo "press Ctrl+C now."
+  cat "$DEST"/000-fail.log
+  echo "!=============================================================================!"
+  echo "! Frame count was not determined for the above files. Transcoding may fail    !"
+  echo "! for those files. This script will automatically continue after 10 seconds.  !"
+  echo "! If you want to stop to check/correct the files, please press Ctrl+C now.    !"
+  echo "!=============================================================================!"
   sleep 10
 fi
 
@@ -587,7 +592,7 @@ if [ "$SUBCOUNT" -ge "1" ]; then
 fi
 
 # If only ascii characters were found, proceed with the transcoding.
-echo "Found $TOTALCNT $(fileORfiles "$TOTALCNT") totalling $(numfmt --to=iec $ORIGSIZE). Starting the transcoding..."
+echo "Processed $TOTALCNT $(fileORfiles "$TOTALCNT") totalling $(numfmt --to=iec $ORIGSIZE). Starting the transcoding..."
 sleep 4
 
 # Save the source location for easy future reference
