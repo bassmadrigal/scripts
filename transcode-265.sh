@@ -165,8 +165,6 @@ old_progress()
     echo
   } > "$DEST"/000-ETA
   cat "$DEST"/000-ETA
-  echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')" >> "$DEST"/000-old-ETA
-
 }
 
 # Let's try a new progress feature based on frame count rather than how
@@ -190,7 +188,6 @@ new_progress()
     echo
   } > "$DEST"/000-ETA
   cat "$DEST"/000-ETA
-  echo "Estimated Completion: $(date --date='+'"$EST_REMAIN_SEC"' seconds')" >> "$DEST"/000-new-ETA
 }
 
 print_global_stats()
@@ -230,8 +227,6 @@ final_stats()
     fi
   } >> "$DEST"/000-stats
   cat "$DEST"/000-stats
-  echo -e "\nFinal completion: $(date)" >> "$DEST"/000-old-ETA
-  echo -e "\nFinal completion: $(date)" >> "$DEST"/000-new-ETA
 }
 
 check_dir()
@@ -780,7 +775,6 @@ for FILE in "$SRC"/**; do
     # If we have a frame count, use the new progress option
     if [ "$framechk" != "none" ]; then
       new_progress $SECONDS
-      old_progress $SECONDS
     else
       old_progress $SECONDS
     fi
