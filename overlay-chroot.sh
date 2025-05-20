@@ -52,6 +52,19 @@ ACCESS=${ACCESS:-yes}
 
 # ---------------------------Global Settings Ending----------------------------
 
+# --------------------------Custom Commands Beginning--------------------------
+# This will allow you to add custom aliases or functions into the chroot
+# Make sure you escape single quotes and variables and that all commands are on
+# their own lines
+custom_cmd='
+alias example1="echo example 1"
+example2 ()
+{
+  echo example 2
+}
+'
+# ---------------------------Custom Commands Ending----------------------------
+
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
@@ -184,6 +197,13 @@ if [ "$ACCESS" == "yes" ]; then
   xhost +local:hosts
 fi
 
+# Check if there are custom commands to add by checking for text
+if [[ "$custom_cmd" =~ [a-zA-Z] ]]; then
+  echo "Adding custom commands to chroot's /etc/profile.d/chroot_custom_cmds.sh"
+  echo "$custom_cmd" > "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
+  chmod +x "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
+fi
+
 # Let's save the following in the root of the chroot structure to allow
 # the user to enter into that chroot from another prompt and/or if they
 # accidentally leave the chroot.
@@ -195,7 +215,7 @@ cat << EOH > "$TMPDIR"/start-chroot.sh
 # Use custom PS1 so we know we're in the chroot
 echo "Entering chroot. Please type \"exit\" to exit it."
 echo "You can add files to the chroot by placing them in $TMPDIR/chroot/"
-chroot "$TMPDIR"/chroot env PS1="\[\e[41m\]\u\[\e[49m\]@\[\e[33m\]$(basename "$TMPDIR")\[\e[0m\]:\w$ " bash
+chroot "$TMPDIR"/chroot env PS1="\[\e[41m\]\u\[\e[49m\]@\[\e[33m\]$(basename "$TMPDIR")\[\e[0m\]:\w$ " bash -l
 EOH
 
 # Start the chroot
