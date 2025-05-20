@@ -188,24 +188,26 @@ if [ -e "$SLACKWARE_BASE"/usr/sbin/sbopkg ]; then
   fi
 fi
 
-# Checking if we can add local connection access
-if [ "$ACCESS" == "yes" ]; then
-  echo "Setting up X server access."
-  xhost +local:hosts
-fi
+# Only set up X server access and launch the chroot if update isn't passed
+if [ "$1" != "update" ]; then
+  # Checking if we can add local connection access
+  if [ "$ACCESS" == "yes" ]; then
+    echo "Setting up X server access"
+    echo "STATUS: $(xhost +local:hosts)"
+  fi
 
-# Check if there are custom commands to add by checking for text
-if [[ "$custom_cmd" =~ [a-zA-Z] ]]; then
-  echo "Adding custom commands to chroot's /etc/profile.d/chroot_custom_cmds.sh"
-  echo "$custom_cmd" > "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
-  chmod +x "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
-fi
+  # Check if there are custom commands to add by checking for text
+  if [[ "$custom_cmd" =~ [a-zA-Z] ]]; then
+    echo "Adding custom commands to chroot's /etc/profile.d/chroot_custom_cmds.sh"
+    echo "$custom_cmd" > "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
+    chmod +x "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
+  fi
 
-# Let's save the following in the root of the chroot structure to allow
-# the user to enter into that chroot from another prompt and/or if they
-# accidentally leave the chroot.
-# Then we'll just execute the file to actually enter the chroot.
-cat << EOH > "$TMPDIR"/start-chroot.sh
+  # Let's save the following in the root of the chroot structure to allow
+  # the user to enter into that chroot from another prompt and/or if they
+  # accidentally leave the chroot.
+  # Then we'll just execute the file to actually enter the chroot.
+  cat << EOH > "$TMPDIR"/start-chroot.sh
 #!/bin/bash
 # Time to actually chroot and do our work
 # Need to type 'exit' to leave the chroot and start the cleanup
@@ -215,8 +217,9 @@ echo "You can add files to the chroot by placing them in $TMPDIR/chroot/"
 chroot "$TMPDIR"/chroot env PS1="\[\e[41m\]\u\[\e[49m\]@\[\e[33m\]$(basename "$TMPDIR")\[\e[0m\]:\w$ " bash -l
 EOH
 
-# Start the chroot
-bash "$TMPDIR"/start-chroot.sh
+  # Start the chroot
+  bash "$TMPDIR"/start-chroot.sh
+fi
 
 # Start cleanup
 
@@ -232,13 +235,18 @@ umount "$TMPDIR"/chroot/var/lib/dbus/machine-id
 # umount overlayfs
 umount "$TMPDIR"/chroot
 
-# Ask if tmp dirs should be removed
-# Could be kept to review filesystem changes
-echo -n "Would you like to remove the unneeded overlay directories? y/N "
-read -r answer
-# If anything other than y, rm them
-if ! /usr/bin/grep -qi "y" <<< "$answer"; then
-  echo "Temp overlay dirs will not be removed. They can be found at $TMPDIR."
+# Only ask to delete chroot if update isn't passed, otherwise delete without asking
+if [ "$1" != "update" ]; then
+  # Ask if tmp dirs should be removed
+  # Could be kept to review filesystem changes
+  echo -n "Would you like to remove the unneeded overlay directories? y/N "
+  read -r answer
+  # If anything other than y, rm them
+  if ! /usr/bin/grep -qi "y" <<< "$answer"; then
+    echo "Temp overlay dirs will not be removed. They can be found at $TMPDIR."
+  else
+    rm -r "$TMPDIR"
+  fi
 else
   rm -r "$TMPDIR"
 fi
