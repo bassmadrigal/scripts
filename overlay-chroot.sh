@@ -85,6 +85,11 @@ if [ "$1" == "cleanup" ]; then
       umount "$i"/chroot/etc/resolv.conf
     fi
 
+    if mountpoint -q "$i"/chroot/var/lib/dbus/machine-id; then
+      printf "\tUnmounting %s/chroot/var/lib/dbus/machine-id\n" "$i"
+      umount "$i"/chroot/var/lib/dbus/machine-id
+    fi
+
     # umount overlayfs
     if mountpoint -q "$i"/chroot; then
       printf "\tUnmounting %s/chroot/%s/chroot\n" "$i" "$j"
@@ -143,6 +148,11 @@ echo "Setting up internet"
 mount -o bind /etc/resolv.conf "$TMPDIR"/chroot/etc/resolv.conf
 chroot "$TMPDIR"/chroot /bin/bash -c "/usr/sbin/update-ca-certificates --fresh > /dev/null"
 
+# Setting up DBUS binding required for certain apps
+echo "Binding DBUS to local machine"
+touch "$TMPDIR"/chroot/var/lib/dbus/machine-id
+mount -o bind /var/lib/dbus/machine-id "$TMPDIR"/chroot/var/lib/dbus/machine-id
+
 # Update sbopkg (if installed) and queues
 # Do it in the chroot to prevent GPG errors, but copy files back to the
 # base image so we only need to do it during updates.
@@ -188,6 +198,7 @@ for i in dev proc sys; do
 done
 
 umount "$TMPDIR"/chroot/etc/resolv.conf
+umount "$TMPDIR"/chroot/var/lib/dbus/machine-id
 
 # umount overlayfs
 umount "$TMPDIR"/chroot
