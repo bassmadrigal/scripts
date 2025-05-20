@@ -57,11 +57,8 @@ ACCESS=${ACCESS:-yes}
 # Make sure you escape single quotes and variables and that all commands are on
 # their own lines
 custom_cmd='
-alias example1="echo example 1"
-example2 ()
-{
-  echo example 2
-}
+# Check all listed deps in a .info to see if they are installed
+alias checkdeps=". *.info; for i in \$REQUIRES; do ls /var/log/packages/*SBo* | cut -d/ -f5 | rev | cut -d- -f4- | rev | grep ^\$i$; done"
 '
 # ---------------------------Custom Commands Ending----------------------------
 
