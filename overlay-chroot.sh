@@ -69,6 +69,10 @@ if [ "$1" == "cleanup" ]; then
       exit 2
     fi
 
+    if mountpoint -q "$i"/chroot/dev/pts; then
+      printf "\tUnmounting %s/chroot/dev/pts\n" "$i"
+      umount "$i"/chroot/dev/pts
+    fi
     for j in dev proc sys; do
       if mountpoint -q "$i"/chroot/$j; then
         printf "\tUnmounting %s/chroot/%s\n" "$i" "$j"
@@ -130,6 +134,10 @@ for i in dev proc sys; do
   mount -o bind /$i "$TMPDIR"/chroot/$i
 done
 
+# Mount /dev/pts for sudo
+mkdir -p "$TMPDIR"/changes/dev/pts
+mount -o bind /dev/pts "$TMPDIR"/chroot/dev/pts
+
 # Give the chroot internet
 echo "Setting up internet"
 mount -o bind /etc/resolv.conf "$TMPDIR"/chroot/etc/resolv.conf
@@ -174,6 +182,7 @@ bash "$TMPDIR"/start-chroot.sh
 # Start cleanup
 
 # Undo bind mounts
+umount "$TMPDIR"/chroot/dev/pts
 for i in dev proc sys; do
   umount "$TMPDIR"/chroot/$i
 done
