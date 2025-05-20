@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2023-2024 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2023-2025 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,7 +26,12 @@
 # easy testing of SlackBuild scripts in a clean environment. Ensure that base
 # is updated every time this script is ran along with updating sbopkg and
 # running sqg to update all queues. Offer to remove chroot files when exiting
-# the chroot and, if passed "cleanup", remove any remaining chroot files.
+# the chroot.
+
+# Supports passing "cleanup" to remove any existing chroots and their files.
+
+# Supports passing "update" to update the base image with slackpkg and sbopkg
+# and then exiting without starting the chroot.
 
 # TODO
 # Currently empty
@@ -47,7 +52,7 @@ LOCAL_MIRROR=/share/gothrough/slackware-mirrors/slackware64-$VERSION/
 # To allow you to open GUI programs from within the chroot, you need to
 # allow "remote" access to the x server. This could possibly open up
 # security issues, but it is limited to non-network local connections.
-# Change to "no" if you want this disabled or pass REMOTE=no to the script.
+# Change to "no" if you want this disabled or pass ACCESS=no to the script.
 ACCESS=${ACCESS:-yes}
 
 # ---------------------------Global Settings Ending----------------------------
