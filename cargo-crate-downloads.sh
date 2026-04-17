@@ -85,10 +85,12 @@ done
 # Display the names and versions of each crate to add to the
 # SlackBuild for proper sourcing
 echo "Creating crate.list to be parsed by the SlackBuild."
-for i in $URLS; do
-  name=$(echo "$i" | rev | cut -d/ -f1 | cut -d- -f2- | rev)
-  version=$(echo "$i" | rev | cut -d/ -f1 | cut -d- -f1 | cut -d. -f2- | rev)
-  echo "$name $version"
+for URL in $URLS; do
+  FILE="${URL##*/}"
+  CRATENAM=$(basename "$(dirname "$URL")")
+  CRATEVER="${FILE#${CRATENAM}-}"
+  CRATEVER="${CRATEVER%.crate}"
+  echo "$CRATENAM $CRATEVER"
 done > crate.list
 
 echo "Ensure the following is in the SlackBuild after you cd into the source"
