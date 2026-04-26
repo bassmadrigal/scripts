@@ -191,36 +191,57 @@ sed -Ei '/MD5SUM=/s| | \\\n        |g' "$PRGNAM".info
 sed -Ei '/DOWNLOAD_x86_64=/s| | \\\n                 |g' "$PRGNAM".info
 sed -Ei '/MD5SUM_x86_64=/s| | \\\n               |g' "$PRGNAM".info
 
-# Check if the Copyright year contains the current year
-COPYRIGHT=$(grep Copyright "$PRGNAM".SlackBuild | tail -n1)
-if ! grep -q "$(date +"%Y")" <<< "$COPYRIGHT"; then
-  echo -e "\n=============================${YELLOW}YEAR WARNING${RESET}==============================="
-  echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain this year's date.\n"
-  echo -e "\t$COPYRIGHT\n"
-  echo "Please check and consider updating."
-  echo -e "=============================${YELLOW}YEAR WARNING${RESET}===============================\n"
-  WARN=yes
-fi
+unset WARN
 
 # Check if the user's name is included in the copyright
-if ! grep -q "$NAME" <<< "$COPYRIGHT"; then
+COPYRIGHT=$(grep Copyright "$PRGNAM".SlackBuild | tail -n1)
+CURRYEAR="$(date +"%Y")"
+if [ -z "$COPYRIGHT" ]; then
+  echo -e "\n==========================${YELLOW}COPYRIGHT WARNING${RESET}============================"
+  echo -e "Copyright on $PRGNAM.SlackBuild does not seem to exist.\n"
+  echo "Unable to verify ownership and year of SlackBuild."
+  echo -e "==========================${YELLOW}COPYRIGHT WARNING${RESET}============================\n"
+elif ! grep -q "$NAME" <<< "$COPYRIGHT"; then
   echo -e "\n=============================${YELLOW}NAME WARNING${RESET}==============================="
-  echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain your name.\n"
   echo -e "\t$COPYRIGHT\n"
   echo "Please check and consider updating."
   echo -e "=============================${YELLOW}NAME WARNING${RESET}===============================\n"
-  WARN=yes
+  WARN=name
+else
+  # Check if the Copyright year contains the current year
+  if ! grep -q "$CURRYEAR" <<< "$COPYRIGHT"; then
+    echo -e "\n=============================${YELLOW}YEAR WARNING${RESET}==============================="
+    echo -e "Copyright on $PRGNAM.SlackBuild does not seem contain this year's date.\n"
+    echo -e "\t$COPYRIGHT\n"
+    echo "Please check and consider updating."
+    echo -e "=============================${YELLOW}YEAR WARNING${RESET}===============================\n"
+    WARN=year
+  fi
 fi
 
-if [ "$WARN" == "yes" ]; then
-  read -erp "Would you like to edit the SlackBuild before continuing? Y/n " answer
+if [ "$WARN" == "name" ]; then
+  read -erp "Would you like $(basename "$0") to try and add your copyright info? Y/n " answer
   if ! /usr/bin/grep -qi "n" <<< "$answer"; then
-    $EDITOR "$PRGNAM".SlackBuild
+    sed -i "/All rights reserved./i# Copyright $CURRYEAR $NAME <$EMAIL>" "$PRGNAM".SlackBuild
+  fi
+elif [ "$WARN" == "year" ]; then
+  read -erp "Would you like $(basename "$0") to try and update the Copyright year? Y/n " answer
+  if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+    # Change year ranges
+    if grep -q "Copyright 20..-20.. *$NAME" "$PRGNAM".SlackBuild; then
+      sed -i "s|-20.. *$NAME|-$CURRYEAR $NAME|" "$PRGNAM".SlackBuild
+    # Add range to single year
+    elif grep -q "Copyright 20.. *$NAME" "$PRGNAM".SlackBuild; then
+      ORIGYEAR=$(grep "Copyright.*$NAME" "$PRGNAM".SlackBuild | cut -d' ' -f3)
+      sed -i "s|Copyright 20.. *$NAME|Copyright $ORIGYEAR-$CURRYEAR $NAME|" "$PRGNAM".SlackBuild
+    else
+      echo "Could not determine line to edit. Please edit manually"
+      $EDITOR "$PRGNAM".SlackBuild
+    fi
   fi
 fi
 
 echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
-
 # Let's offer to run the SlackBuild and some tests
 echo -e "\nRunning sbolint on directory"
 sbolint .
