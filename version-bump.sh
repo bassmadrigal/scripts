@@ -72,7 +72,8 @@ if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
     read -erp "Do you want to switch to or create a new branch? Y/n " answer
     if ! /usr/bin/grep -qi "n" <<< "$answer"; then
       read -erp "Enter name of new/existing branch: " newbranch
-      git checkout -B "$newbranch"
+      # Don't replace an existing branch when checking out
+      git checkout "$newbranch" 2> /dev/null || git checkout -B "$newbranch"
       CUR_BRANCH=$newbranch
     else
       read -erp "Do you want to continue working on $DEF_BRANCH? y/N " answer
