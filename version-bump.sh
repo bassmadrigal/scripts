@@ -270,7 +270,7 @@ if ! /usr/bin/grep -qi "n" <<< "$answer"; then
         # it after we add the subshell text.
         NEWPS1="${PS1//\\\$ /} \[\e[33m\](subshell)\[\e[0m\]$ "
         echo "Type 'exit' to go back to end testing."
-        env PS1="$NEWPS1" bash --norc
+        bash --init-file <(echo "PS1=\"$NEWPS1\"; source ~/.bashrc")
       fi
     fi
     CATEGORY=$(pwd | rev | cut -d/ -f2 | rev)
