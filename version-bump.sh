@@ -106,6 +106,20 @@ fi
 
 # Change the version in the .info and .SlackBuild
 if [ "$VERSION" != "$NEWVER" ]; then
+
+  # Try and determine the lower version and warn against possible downgrading.
+  LOWVER="$(printf '%s\n' "$VERSION" "$NEWVER" | sort -V | head -n1)"
+
+  # Skip this warning if the version is a commit ID
+  if [ "$LOWVER" = "$NEWVER" ] && ! /usr/bin/grep -Eq '^[0-9a-fA-F]{7}$' <<< "$NEWVER"; then
+    echo -e "${YELLOW}WARNING${RESET}: This looks to be a possible downgrade."
+    echo "Old version: $VERSION  | New version: $NEWVER"
+    read -erp "Continue anyway? y/N " answer
+    if ! /usr/bin/grep -qi "y" <<< "$answer"; then
+      exit 1
+    fi
+  fi
+
   echo -e "Changing $PRGNAM's version from ${YELLOW}$VERSION${RESET} to ${GREEN}$NEWVER${RESET}."
   # Need to escape any periods in the variables to prevent them from
   # being treated as wildcards.
