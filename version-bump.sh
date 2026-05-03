@@ -22,6 +22,24 @@
 
 # Simple version bump for SlackBuilds.
 
+# Is 'sudo' expected to be set up for the user? Answers are:
+# yes   - Don't check and just expect sudo to work
+# no    - Expect sudo won't work and prompt for root password using 'su -c'
+# maybe - Check if sudo works, which may require entering the password
+#         depending on how it's configured
+USE_SUDO=${USE_SUDO:-yes}
+
+suORsudo ()
+{
+  if [ "$USE_SUDO" == "yes" ]; then
+    sudo "$@"
+  elif [ "$USE_SUDO" == "maybe" ] && sudo -l &> /dev/null; then
+    sudo "$@"
+  else
+    su -c "$*"
+  fi
+}
+
 # Make sure the version number is passed to the script or exit
 if [ -z "$1" ]; then
   echo "Please pass the new version number as an argument."
@@ -247,7 +265,7 @@ echo -e "\nRunning sbolint on directory"
 sbolint .
 read -rp $'\nWould you like try running the SlackBuild? Y/n ' answer
 if ! /usr/bin/grep -qi "n" <<< "$answer"; then
-  if ! sudo unshare -n sh "$PRGNAM".SlackBuild; then
+  if ! suORsudo unshare -n sh "$PRGNAM".SlackBuild; then
     echo "$PRGNAM.SlackBuild failed to run. Please correct manually."
     exit 1
   else
@@ -256,7 +274,7 @@ if ! /usr/bin/grep -qi "n" <<< "$answer"; then
     sbopkglint /tmp/"$PKGNAM"
     read -rp $'\nWould you like try upgrading to '"$PKGNAM"'? Y/n ' answer
     if ! /usr/bin/grep -qi "n" <<< "$answer" && [ -e /tmp/"$PKGNAM" ]; then
-      sudo upgradepkg --reinstall /tmp/"$PKGNAM"
+      suORsudo /sbin/upgradepkg --reinstall /tmp/"$PKGNAM"
       read -rp $'\nWould you like a bash shell to test the program? Y/n ' answer
       if ! /usr/bin/grep -qi "n" <<< "$answer"; then
         # We should let people know when they're in a subshell by modifying the
