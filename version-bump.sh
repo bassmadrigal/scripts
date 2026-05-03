@@ -286,10 +286,13 @@ if ! /usr/bin/grep -qi "n" <<< "$answer"; then
         read -rp $'\nWould you like to push that commit to your remote repo, '"\"$DEF_REMOTE\""'? Y/n ' answer
         if ! /usr/bin/grep -qi "n" <<< "$answer"; then
           git push -f origin "$CUR_BRANCH"
-          if git checkout "$DEF_BRANCH"; then
-            echo -e "\nReturned to default branch, \"$DEF_BRANCH\".\n"
-          else
-            echo -e "\n\tERROR: Unable to return to default branch, \"$DEF_BRANCH\".\n"
+          read -rp $'\nWould you like to return to the default branch, '"\"$DEF_BRANCH\""'? Y/n ' answer
+          if ! /usr/bin/grep -qi "n" <<< "$answer"; then
+            if git checkout "$DEF_BRANCH"; then
+              echo -e "\nReturned to default branch, \"$DEF_BRANCH\".\n"
+            else
+              echo -e "\n\tERROR: Unable to return to default branch, \"$DEF_BRANCH\".\n"
+            fi
           fi
         fi
       fi
