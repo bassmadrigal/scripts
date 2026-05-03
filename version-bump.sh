@@ -20,7 +20,25 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Simple version bump for SlackBuilds.
+# -----------------------------------------------------------------------------
+
+# What started out as a simple version bump for SlackBuilds has turned into
+# a highly capable version bumping machine. Simply pass the new version and
+# this script will offer to create a new branch (to push the PR to github,
+# whcih you can ignore if you're committing directly to SBo), update the
+# version across the .SlackBuild and .info, download and md5 all the source(s),
+# update the copyright and reset the BUILD (if required), and run it through
+# sbolint. This is all before offering to attempt to run the SlackBuild.
+
+# Once the compilation is completed, sbopkglint is ran against the package and
+# the # package is updated. Then you are offered a shell to test the package
+# (I've pre-loaded a command called `pipcheck`, which is an alias for
+# `pip check | sort`, which can be handy for python packages). After you exit
+# that shell, it will prompt you to commit your changes, prompt to push changes
+# to the current branch, and then ask if you want to change to the master
+# branch.
+
+# -----------------------------------------------------------------------------
 
 # Is 'sudo' expected to be set up for the user? Answers are:
 # yes   - Don't check and just expect sudo to work
@@ -274,6 +292,7 @@ elif [ "$WARN" == "year" ]; then
 fi
 
 echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
+
 # Let's offer to run the SlackBuild and some tests
 echo -e "\nRunning sbolint on directory"
 sbolint .
