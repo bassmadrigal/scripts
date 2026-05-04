@@ -38,6 +38,10 @@
 # to the current branch, and then ask if you want to change to the master
 # branch.
 
+# Install system/sbo-maintainer-tools from SBo for automatic lint checks of the
+# SlackBuild files and the resulting package. These lint checks are highly
+# encouraged by SBo admins for SlackBuilds submitted to SBo.
+
 # -----------------------------------------------------------------------------
 
 # Is 'sudo' expected to be set up for the user? Answers are:
@@ -295,7 +299,15 @@ echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
 
 # Let's offer to run the SlackBuild and some tests
 echo -e "\nRunning sbolint on directory"
-sbolint .
+
+# Warn user if sbolint is not installed
+if command -v sbolint &> /dev/null; then
+  sbolint .
+else
+  echo -e "${YELLOW}Warning${RESET}: sbolint not found, unable to run SBo-required lint check"
+  echo "Install system/sbo-maintainer-tools if you intend to submit scripts to SBo"
+fi
+
 read -rp $'\nWould you like try running the SlackBuild? Y/n ' answer
 if ! /usr/bin/grep -qi "n" <<< "$answer"; then
   if ! suORsudo unshare -n sh "$PRGNAM".SlackBuild; then
@@ -304,7 +316,14 @@ if ! /usr/bin/grep -qi "n" <<< "$answer"; then
   else
     PKGNAM=$(PRINT_PACKAGE_NAME=yes sh "$PRGNAM".SlackBuild)
     echo -e "Build successful. Running sbopkglint on '$PKGNAM'.\n"
-    sbopkglint /tmp/"$PKGNAM"
+
+    # Warn user if sbopkglint is not installed
+    if command -v sbopkglint &> /dev/null; then
+      sbopkglint /tmp/"$PKGNAM"
+    else
+      echo -e "${YELLOW}Warning${RESET}: sbopkglint not found, unable to run SBo-required lint check"
+      echo "Install system/sbo-maintainer-tools if you intend to submit scripts to SBo"
+    fi
     read -rp $'\nWould you like try upgrading to '"$PKGNAM"'? Y/n ' answer
     if ! /usr/bin/grep -qi "n" <<< "$answer" && [ -e /tmp/"$PKGNAM" ]; then
       suORsudo /sbin/upgradepkg --reinstall /tmp/"$PKGNAM"
