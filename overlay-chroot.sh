@@ -44,7 +44,7 @@
 CHROOT_LOCATION=/tmp/
 CHROOT_TEMPLATE_BASE="chroot"
 
-# Set variables for the base image and location of the local Slacwkare mirror
+# Set variables for the base image and location of the local Slackware mirror
 VERSION=15.0
 SLACKWARE_BASE=/share/gothrough/sbo-build/$VERSION
 LOCAL_MIRROR=/share/gothrough/slackware-mirrors/slackware64-$VERSION/
