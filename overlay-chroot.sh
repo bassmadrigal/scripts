@@ -86,29 +86,29 @@ if [ "$1" == "cleanup" ]; then
 
     if mountpoint -q "$i"/chroot/dev/pts; then
       printf "\tUnmounting %s/chroot/dev/pts\n" "$i"
-      umount "$i"/chroot/dev/pts
+      umount "$i"/chroot/dev/pts || umount -l "$i"/chroot/dev/pts
     fi
     for j in dev proc sys; do
-      if mountpoint -q "$i"/chroot/$j; then
+      if mountpoint -q "$i"/chroot/"$j"; then
         printf "\tUnmounting %s/chroot/%s\n" "$i" "$j"
-        umount "$i"/chroot/$j
+        umount "$i"/chroot/$j || umount -l "$i"/chroot/"$j"
       fi
     done
 
     if mountpoint -q "$i"/chroot/etc/resolv.conf; then
       printf "\tUnmounting %s/chroot/etc/resolv.conf\n" "$i"
-      umount "$i"/chroot/etc/resolv.conf
+      umount "$i"/chroot/etc/resolv.conf || umount -l "$i"/chroot/etc/resolv.conf
     fi
 
     if mountpoint -q "$i"/chroot/var/lib/dbus/machine-id; then
       printf "\tUnmounting %s/chroot/var/lib/dbus/machine-id\n" "$i"
-      umount "$i"/chroot/var/lib/dbus/machine-id
+      umount "$i"/chroot/var/lib/dbus/machine-id || umount -l "$i"/chroot/var/lib/dbus/machine-id
     fi
 
     # umount overlayfs
     if mountpoint -q "$i"/chroot; then
       printf "\tUnmounting %s/chroot/%s/chroot\n" "$i" "$j"
-      umount "$i"/chroot
+      umount "$i"/chroot || umount -l "$i"/chroot
     fi
 
       # Remove dirs
