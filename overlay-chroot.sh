@@ -147,6 +147,9 @@ echo "Creating required directories for the overlay"
 TMPDIR=$(mktemp -d "$CHROOT_LOCATION"/"$CHROOT_TEMPLATE_BASE".XXXXX)
 mkdir "$TMPDIR"/{changes,tmp,chroot}
 
+# Catch unplanned exits and default to keeping the data
+trap 'cleanup_chroot "$TMPDIR" keep' EXIT INT TERM
+
 # Mount the overlayfs
 echo "Mounting the overlay"
 mount -t overlay overlay -olowerdir="$SLACKWARE_BASE",upperdir="$TMPDIR"/changes,workdir="$TMPDIR"/tmp "$TMPDIR"/chroot
