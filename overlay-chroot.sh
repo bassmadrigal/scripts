@@ -67,6 +67,38 @@ alias checkdeps=". *.info; for i in \$REQUIRES; do ls /var/log/packages/*SBo* | 
 '
 # ---------------------------Custom Commands Ending----------------------------
 
+# Simplify calling umount
+safe_umount ()
+{
+  local umount_dir="$1"
+  if mountpoint -q "$umount_dir"; then
+    printf "\tUmounting %s\n" "$umount_dir"
+    umount "$umount_dir" || umount -l "$umount_dir"
+  fi
+}
+
+# Let's consolidate all the cleanups to a single function
+cleanup_chroot ()
+{
+  local chroot_dir="$1"
+  local action="${2:-delete}"
+
+  safe_umount "$chroot_dir"/chroot/dev/pts
+  for mnt in dev proc sys; do
+    safe_umount "$chroot_dir"/chroot/"$mnt"
+  done
+
+  safe_umount "$chroot_dir"/chroot/etc/resolv.conf
+  safe_umount "$chroot_dir"/chroot/var/lib/dbus/machine-id
+  safe_umount "$chroot_dir"/chroot
+
+  if [ -d "$chroot_dir" ] && [ "$action" != "keep" ] ; then
+    printf "\tRemoving %s.\n" "$chroot_dir"
+    rm -rf -- "$chroot_dir"
+  fi
+
+}
+
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
@@ -78,46 +110,18 @@ if [ "$1" == "cleanup" ]; then
 
   for i in "$CHROOT_LOCATION"/"$CHROOT_TEMPLATE_BASE".*; do
     if [ -d "$i" ]; then
+      found="yes"
       echo "Found $i"
+      cleanup_chroot "$i"
     else
+      found="no"
       echo "No chroots to clean up."
       exit 2
     fi
-
-    if mountpoint -q "$i"/chroot/dev/pts; then
-      printf "\tUnmounting %s/chroot/dev/pts\n" "$i"
-      umount "$i"/chroot/dev/pts || umount -l "$i"/chroot/dev/pts
-    fi
-    for j in dev proc sys; do
-      if mountpoint -q "$i"/chroot/"$j"; then
-        printf "\tUnmounting %s/chroot/%s\n" "$i" "$j"
-        umount "$i"/chroot/$j || umount -l "$i"/chroot/"$j"
-      fi
-    done
-
-    if mountpoint -q "$i"/chroot/etc/resolv.conf; then
-      printf "\tUnmounting %s/chroot/etc/resolv.conf\n" "$i"
-      umount "$i"/chroot/etc/resolv.conf || umount -l "$i"/chroot/etc/resolv.conf
-    fi
-
-    if mountpoint -q "$i"/chroot/var/lib/dbus/machine-id; then
-      printf "\tUnmounting %s/chroot/var/lib/dbus/machine-id\n" "$i"
-      umount "$i"/chroot/var/lib/dbus/machine-id || umount -l "$i"/chroot/var/lib/dbus/machine-id
-    fi
-
-    # umount overlayfs
-    if mountpoint -q "$i"/chroot; then
-      printf "\tUnmounting %s/chroot/%s/chroot\n" "$i" "$j"
-      umount "$i"/chroot || umount -l "$i"/chroot
-    fi
-
-      # Remove dirs
-    if [ -d "$i" ]; then
-      printf "\tRemoving %s.\n" "$i"
-      rm -r "$i"
-    fi
   done
-  echo "Cleanup complete"
+  if [ "$found" == "yes" ]; then
+    echo "Cleanup complete"
+  fi
   exit
 fi
 
@@ -228,18 +232,6 @@ fi
 
 # Start cleanup
 
-# Undo bind mounts
-umount "$TMPDIR"/chroot/dev/pts
-for i in dev proc sys; do
-  umount "$TMPDIR"/chroot/$i
-done
-
-umount "$TMPDIR"/chroot/etc/resolv.conf
-umount "$TMPDIR"/chroot/var/lib/dbus/machine-id
-
-# umount overlayfs
-umount "$TMPDIR"/chroot
-
 # Only ask to delete chroot if update isn't passed, otherwise delete without asking
 if [ "$1" != "update" ]; then
   # Ask if tmp dirs should be removed
@@ -249,9 +241,10 @@ if [ "$1" != "update" ]; then
   # If anything other than y, rm them
   if ! /usr/bin/grep -qi "y" <<< "$answer"; then
     echo "Temp overlay dirs will not be removed. They can be found at $TMPDIR."
+    cleanup_chroot "$TMPDIR" "dont-delete"
   else
-    rm -r "$TMPDIR"
+    cleanup_chroot "$TMPDIR"
   fi
 else
-  rm -r "$TMPDIR"
+  cleanup_chroot "$TMPDIR"
 fi
