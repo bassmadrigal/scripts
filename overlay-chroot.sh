@@ -247,6 +247,8 @@ if [ "$1" != "update" ]; then
   # Could be kept to review filesystem changes
   echo -n "Would you like to remove the unneeded overlay directories? y/N "
   read -r answer
+  # Turn off the trap since all further commands will run the cleanup.
+  trap - EXIT INT TERM
   # If anything other than y, rm them
   if ! /usr/bin/grep -qi "y" <<< "$answer"; then
     echo "Temp overlay dirs will not be removed. They can be found at $TMPDIR."
