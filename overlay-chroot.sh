@@ -198,6 +198,11 @@ if [ -e "$SLACKWARE_BASE"/usr/sbin/sbopkg ]; then
   else
     echo "sbopkg is up-to-date."
   fi
+else
+  echo "sbopkg is not installed... skipping update."
+  echo "If you'd like sbopkg to be installed, download the latest version from"
+  echo "https://sbopkg.org and run the following command as root:"
+  echo "ROOT=$SLACKWARE_BASE installpkg sbopkg-*-noarch-1_wsr.tgz"
 fi
 
 # Only set up X server access and launch the chroot if update isn't passed
