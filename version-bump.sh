@@ -77,7 +77,7 @@ if [ -e ~/.version-bump ]; then
 fi
 
 if [ -n "$NAME" ] && [ ! -e ~/.version-bump ]; then
-  echo "Your name is not set, so $(basename) can't check the copyright"
+  echo "Your name is not set, so $(basename $0) can't check the copyright"
   read -erp "for your info. Please type your name: " NAME
   echo "NAME=\"$NAME\"" > ~/.version-bump
 fi
@@ -132,7 +132,8 @@ if [ "$VERSION" != "$NEWVER" ]; then
   # Try and determine the lower version and warn against possible downgrading.
   LOWVER="$(printf '%s\n' "$VERSION" "$NEWVER" | sort -V | head -n1)"
 
-  # Skip this warning if the version is a commit ID
+  # Warn against possible downgrading, but skip this warning if the version
+  # is probably a git commit ID
   if [ "$LOWVER" = "$NEWVER" ] && ! /usr/bin/grep -Eq '^[0-9a-fA-F]{7}$' <<< "$NEWVER"; then
     echo -e "${YELLOW}WARNING${RESET}: This looks to be a possible downgrade."
     echo "Old version: $VERSION  | New version: $NEWVER"
@@ -297,17 +298,16 @@ fi
 
 echo -e "${GREEN}Success${RESET}: $PRGNAM was updated to version $VERSION."
 
-# Let's offer to run the SlackBuild and some tests
-echo -e "\nRunning sbolint on directory"
-
-# Warn user if sbolint is not installed
+# Run sbolint or warn user if not installed
 if command -v sbolint &> /dev/null; then
+  echo -e "\nRunning sbolint on directory"
   sbolint .
 else
   echo -e "${YELLOW}Warning${RESET}: sbolint not found, unable to run SBo-required lint check"
   echo "Install system/sbo-maintainer-tools if you intend to submit scripts to SBo"
 fi
 
+# Let's offer to run the SlackBuild and some tests
 read -rp $'\nWould you like try running the SlackBuild? Y/n ' answer
 if ! /usr/bin/grep -qi "n" <<< "$answer"; then
   if ! suORsudo unshare -n sh "$PRGNAM".SlackBuild; then
