@@ -181,7 +181,7 @@ mount -o bind /var/lib/dbus/machine-id "$TMPDIR"/chroot/var/lib/dbus/machine-id
 if [ -e "$SLACKWARE_BASE"/usr/sbin/sbopkg ]; then
   echo "Checking for SBo updates for sbopkg"
   # Get the latest changelog date from server
-  SERVDATE="$(wget -qO- https://slackbuilds.org/slackbuilds/15.0/ChangeLog.txt | head -n1)"
+  SERVDATE="$(wget -qO- "https://slackbuilds.org/slackbuilds/$VERSION/ChangeLog.txt" | head -n1)"
   if [ -z "$SERVDATE" ]; then
     echo "Upstream address did not provide a changelog."
     echo "Please validate internet is working and address is correct"
@@ -189,7 +189,7 @@ if [ -e "$SLACKWARE_BASE"/usr/sbin/sbopkg ]; then
     sleep 5
   fi
   # Get latest changelog date on local copy
-  LOCALDATE="$(head -n1 $SLACKWARE_BASE/var/lib/sbopkg/SBo/15.0/ChangeLog.txt)"
+  LOCALDATE="$(head -n1 "$SLACKWARE_BASE/var/lib/sbopkg/SBo/$VERSION/ChangeLog.txt" 2> /dev/null)"
   # If they don't match, update sbopkg and run sqg. Copy updates back to base image.
   if [ "$SERVDATE" != "$LOCALDATE" ]; then
     chroot "$TMPDIR"/chroot /bin/bash -c "/usr/sbin/sbopkg -r; /usr/sbin/sqg -a"
