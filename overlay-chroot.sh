@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2023-2025 Jeremy Hansen <jebrhansen -at- gmail.com>
+# Copyright 2023-2026 Jeremy Hansen <jebrhansen -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -208,12 +208,18 @@ if [ "$1" != "update" ]; then
     echo "STATUS: $(xhost +local:hosts)"
   fi
 
-  # Check if there are custom commands to add by checking for text
-  if [[ "$custom_cmd" =~ [a-zA-Z] ]]; then
-    echo "Adding custom commands to chroot's /etc/profile.d/chroot_custom_cmds.sh"
-    echo "$custom_cmd" > "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
-    chmod +x "$TMPDIR"/chroot/etc/profile.d/chroot_custom_cmds.sh
+  # Set a custom PS1 script in /etc/profile.d to override the default PS1
+  echo "export PS1=\"\[\033[41m\]\u\[\033[49m\]@\[\033[33m\]$(basename "$TMPDIR")\[\033[0m\]:\w\\$ \"" > \
+  "$TMPDIR"/chroot/etc/profile.d/chroot_custom_options.sh
+
+  # If custom_cmd has some in it, add it to chroot_custom_options.sh
+  if [ -n "$custom_cmd" ]; then
+    echo "Adding custom commands to chroot's /etc/profile.d/chroot_custom_options.sh"
+    echo "$custom_cmd" >> "$TMPDIR"/chroot/etc/profile.d/chroot_custom_options.sh
   fi
+
+  # Add any additional customizations here
+  chmod +x "$TMPDIR"/chroot/etc/profile.d/chroot_custom_options.sh
 
   # Let's save the following in the root of the chroot structure to allow
   # the user to enter into that chroot from another prompt and/or if they
@@ -226,7 +232,7 @@ if [ "$1" != "update" ]; then
 # Use custom PS1 so we know we're in the chroot
 echo "Entering chroot. Please type \"exit\" to exit it."
 echo "You can add files to the chroot by placing them in $TMPDIR/chroot/"
-chroot "$TMPDIR"/chroot env PS1="\[\e[41m\]\u\[\e[49m\]@\[\e[33m\]$(basename "$TMPDIR")\[\e[0m\]:\w$ " bash -l
+chroot "$TMPDIR"/chroot env HOME=/root bash -l
 EOH
 
   # Start the chroot
