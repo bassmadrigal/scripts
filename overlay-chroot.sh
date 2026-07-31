@@ -127,17 +127,21 @@ fi
 
 # Track the latest updates to prevent attempting to update system
 # packages and rebuilding sbopkg's queues
-touch $SLACKWARE_BASE/last-base-update
+LAST_UPDATE_FILE="$SLACKWARE_BASE/last-base-update"
+REMOTE_DATE="$(head -n1 "$LOCAL_MIRROR/ChangeLog.txt")"
 
 # Make sure the base image is up-to-date
-if [ "$(head -n1 $LOCAL_MIRROR/ChangeLog.txt)" != "$(cat $SLACKWARE_BASE/last-base-update)" ]; then
+if [ ! -f "$LAST_UPDATE_FILE" ] || \
+   [ "$REMOTE_DATE" != "$(cat "$LAST_UPDATE_FILE")" ]; then
+
   for i in "$LOCAL_MIRROR"/patches/packages/*.t?z; do
     if [ ! -e "$SLACKWARE_BASE"/var/lib/pkgtools/packages/"$(basename "${i%.*}")" ]; then
-      ROOT=$SLACKWARE_BASE upgradepkg --install-new "$i"
+      ROOT="$SLACKWARE_BASE" upgradepkg --install-new "$i"
     fi
   done
+
   echo "Slackware has been updated with local mirror."
-  head -n1 $LOCAL_MIRROR/ChangeLog.txt > $SLACKWARE_BASE/last-base-update
+  echo "$REMOTE_DATE" > "$LAST_UPDATE_FILE"
 else
   echo "Slackware is up-to-date with the local mirror."
 fi
