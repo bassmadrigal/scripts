@@ -48,29 +48,37 @@ cd $(echo $SRCFILE | rev| cut -d- -f2- | rev)-$VERSION
 # for each required crate.
 URLS=$(python3 <<'EOP'
 import tomli
+import os
 
 with open("Cargo.lock", "rb") as f:
     data = tomli.load(f)
 
-urls = set()
+selected = set()
 
 for pkg in data["package"]:
-    src = pkg.get("source", "")
-    if "crates.io" in src:
-        name = pkg["name"]
-        version = pkg["version"]
-        urls.add(f"https://static.crates.io/crates/{name}/{name}-{version}.crate")
+    if "crates.io" not in pkg.get("source", ""):
+        continue
 
-for url in sorted(urls):
-    print(url)
+    name = pkg["name"]
+    version = pkg["version"]
+    checksum = pkg.get("checksum", "")
+    selected.add((name, version, checksum))
 
+# Write crate.list to parent directory (SlackBuild dir)
+with open("../crate.list", "w") as f:
+    for name, version, checksum in sorted(selected):
+        f.write(f"{name} {version} {checksum}\n")
+
+# Print URLs
+for name, version, _ in sorted(selected):
+    print(f"https://static.crates.io/crates/{name}/{name}-{version}.crate")
 EOP
 )
 
 cd ..
 
 # Display download links with spacing and backslashes
-# (Make sure to remove the last on and add an end quote)
+# (Make sure to remove the last one and add an end quote)
 URLCNT=$(echo "$URLS" | wc -l)
 COUNT=0
 for i in $URLS; do
@@ -82,17 +90,6 @@ for i in $URLS; do
   fi
 done
 
-# Display the names and versions of each crate to add to the
-# SlackBuild for proper sourcing
-echo "Creating crate.list to be parsed by the SlackBuild."
-for URL in $URLS; do
-  FILE="${URL##*/}"
-  CRATENAM=$(basename "$(dirname "$URL")")
-  CRATEVER="${FILE#${CRATENAM}-}"
-  CRATEVER="${CRATEVER%.crate}"
-  echo "$CRATENAM $CRATEVER"
-done > crate.list
-
 echo "Ensure the following is in the SlackBuild after you cd into the source"
 echo "directory but before the chown command so it can process the crates."
 echo "+------------------------------cut below------------------------------+"
@@ -100,14 +97,17 @@ cat <<'EOL'
 
 # Prepare the crates for offline usage
 mkdir -p vendor .cargo
-echo "[patch.crates-io]" >> Cargo.toml
 
-while read -r CRATENAME CRATEVER; do
+while read -r CRATENAME CRATEVER CRATECHKSUM; do
   mkdir -p "vendor/${CRATENAME}-${CRATEVER}"
   tar xf "$CWD/${CRATENAME}-${CRATEVER}.crate" \
     --strip-components=1 \
     -C "vendor/${CRATENAME}-${CRATEVER}/"
-  echo "$CRATENAME = { path = \"vendor/${CRATENAME}-${CRATEVER}\" }" >> Cargo.toml
+  if [ -n "$CRATECHKSUM" ]; then
+    printf '{"package":"%s","files":{}}\n' "$CRATECHKSUM" > "vendor/${CRATENAME}-${CRATEVER}/.cargo-checksum.json"
+  else
+    echo '{"files":{}}' > "vendor/${CRATENAME}-${CRATEVER}/.cargo-checksum.json"
+  fi
 done < "$CWD/crate.list"
 
 # Create a config.toml that forces using local versions in vendor/
