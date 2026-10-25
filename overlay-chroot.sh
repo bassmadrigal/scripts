@@ -188,21 +188,21 @@ fi
 # Provide an easy cleanup for older tmp files and exit
 if [ "$1" == "cleanup" ]; then
 
+  found="no"
   for i in "$CHROOT_LOCATION"/"$CHROOT_TEMPLATE_BASE".*; do
     if [ -d "$i" ]; then
       found="yes"
       echo "Found $i"
       cleanup_chroot "$i"
-    else
-      found="no"
-      echo "No chroots to clean up."
-      exit 2
     fi
   done
   if [ "$found" == "yes" ]; then
     echo "Cleanup complete"
+  else
+    echo "No chroots to clean up."
+    exit 2
   fi
-  exit
+  exit 0
 fi
 
 # If EXCLUDE_SOURCE was set to "yes" include options for rsync to skip the
