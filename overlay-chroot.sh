@@ -33,6 +33,8 @@
 # Supports passing "update" to update the base image with slackpkg and sbopkg
 # and then exiting without starting the chroot.
 
+# Supports passing "list" to show all existing chroots sorted by date.
+
 # TODO
 # Currently empty
 
@@ -164,6 +166,23 @@ cleanup_chroot ()
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root" >&2
   exit 1
+fi
+
+# Allow the user to see a list of all chroots
+if [ "$1" == "list" ]; then
+
+  # Loop through all the chroots
+  for i in "$CHROOT_LOCATION"/"$CHROOT_TEMPLATE_BASE".*; do
+    [ -d "$i" ] || continue
+    # Print their last modified epoch time along with the chroot folder
+    printf "%s %s\n" "$(stat -c '%Y' "$i")" "$i"
+  # Sort the output oldest (top) to newest (bottom)
+  done | sort -n | while read -r EPOCH FOLDER; do
+    # Change the epoch time to YYYY-MM-DD and then output to folder and date
+    DATEOUTPUT=$(date -d @"$EPOCH" "+%Y-%m-%d")
+    echo "$FOLDER - $DATEOUTPUT"
+  done
+  exit 0
 fi
 
 # Provide an easy cleanup for older tmp files and exit
