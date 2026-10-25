@@ -425,8 +425,8 @@ if [ "$1" != "update" ]; then
   echo "export PS1=\"\[\033[41m\]\u\[\033[49m\]@\[\033[33m\]$(basename "$TMPDIR")\[\033[0m\]:\w\\$ \"" > \
   "$TMPDIR"/chroot/etc/profile.d/chroot_custom_options.sh
 
-  # If custom_cmd has some in it, add it to chroot_custom_options.sh
-  if [ -n "$custom_cmd" ]; then
+  # Check if there are custom commands to add by checking for text
+  if [[ "$custom_cmd" =~ [a-zA-Z] ]]; then
     echo "Adding custom commands to chroot's /etc/profile.d/chroot_custom_options.sh"
     echo "$custom_cmd" >> "$TMPDIR"/chroot/etc/profile.d/chroot_custom_options.sh
   fi
