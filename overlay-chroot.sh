@@ -379,6 +379,10 @@ echo "Binding DBUS to local machine"
 touch "$TMPDIR"/chroot/var/lib/dbus/machine-id
 mount -o bind /var/lib/dbus/machine-id "$TMPDIR"/chroot/var/lib/dbus/machine-id
 
+# Rebuild the gdk-pixbuf module cache, needed to be able to launch/test some programs
+echo "Rebuilding the gdk-pixbuf module cache"
+chroot "$TMPDIR"/chroot /bin/bash -c "gdk-pixbuf-query-loaders --update-cache 2>/dev/null || true"
+
 # Update sbopkg (if installed) and queues
 # Do it in the chroot to prevent GPG errors, but copy files back to the
 # base image so we only need to do it during updates.
