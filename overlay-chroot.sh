@@ -88,7 +88,7 @@ RSYNC_OPTIONS="-a --delete"
 # their own lines
 custom_cmd='
 # Check all listed deps in a .info to see if they are installed
-alias checkdeps=". *.info; for i in \$REQUIRES; do ls /var/log/packages/*SBo* | cut -d/ -f5 | rev | cut -d- -f4- | rev | grep ^\$i$; done"
+alias checkdeps=". *.info; for i in \$REQUIRES; do ls /var/lib/pkgtools/packages/*SBo* | cut -d/ -f5 | rev | cut -d- -f4- | rev | grep ^\$i$; done"
 '
 # ---------------------------Custom Commands Ending----------------------------
 
@@ -303,7 +303,7 @@ if [ ! -d "$SLACKWARE_BASE" ] || [ ! -f "$SLACKWARE_BASE"/etc/slackware-version 
   for i in "$LOCAL_MIRROR"/patches/packages/*.t?z; do
     package=$(basename "$i")
     package="${package%.t?z}"
-    if [ ! -f "$SLACKWARE_BASE"/var/log/packages/"$package" ]; then
+    if [ ! -f "$SLACKWARE_BASE"/var/lib/pkgtools/packages/"$package" ]; then
       ROOT="$SLACKWARE_BASE" installpkg "$i"
     fi
   done
