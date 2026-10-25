@@ -162,8 +162,8 @@ cleanup_chroot ()
 
 # Check that we're root
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root"
-  exit
+  echo "Please run as root" >&2
+  exit 1
 fi
 
 # Provide an easy cleanup for older tmp files and exit
