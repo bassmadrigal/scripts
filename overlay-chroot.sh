@@ -301,7 +301,8 @@ if [ ! -d "$SLACKWARE_BASE" ] || [ ! -f "$SLACKWARE_BASE"/etc/slackware-version 
 
   # Catch any added packages to stable in patches/
   for i in "$LOCAL_MIRROR"/patches/packages/*.t?z; do
-    package=$(echo "$i" | rev | cut -d/ -f1 | cut -d. -f2 | rev)
+    package=$(basename "$i")
+    package="${package%.t?z}"
     if [ ! -f "$SLACKWARE_BASE"/var/log/packages/"$package" ]; then
       ROOT="$SLACKWARE_BASE" installpkg "$i"
     fi
