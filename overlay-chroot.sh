@@ -369,6 +369,7 @@ echo "Binding required directories"
 mkdir -p "$TMPDIR"/changes/{dev,proc,sys}
 for i in dev proc sys; do
   mount -o bind /$i "$TMPDIR"/chroot/$i
+  mount --make-private "$TMPDIR"/chroot/$i
 done
 
 # Mount /dev/pts for sudo
