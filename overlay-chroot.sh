@@ -395,7 +395,7 @@ chroot "$TMPDIR"/chroot /bin/bash -c "gdk-pixbuf-query-loaders --update-cache 2>
 if [ -e "$SLACKWARE_BASE"/usr/sbin/sbopkg ]; then
   echo "Checking for SBo updates for sbopkg"
   # Get the latest changelog date from server
-  SERVDATE="$(wget -qO- "https://slackbuilds.org/slackbuilds/$VERSION/ChangeLog.txt" | head -n1)"
+  SERVDATE="$(wget -qO- --timeout=10 --tries=2 "https://slackbuilds.org/slackbuilds/$VERSION/ChangeLog.txt" | head -n1)"
   if [ -z "$SERVDATE" ]; then
     echo "Upstream address did not provide a changelog."
     echo "Please validate internet is working and address is correct"
