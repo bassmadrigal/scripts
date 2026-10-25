@@ -273,9 +273,14 @@ if [ ! -d "$SLACKWARE_BASE" ] || [ ! -f "$SLACKWARE_BASE"/etc/slackware-version 
   # packages when actually creating the chroot.
   declare -A PATCHES
   for pkg in "$LOCAL_MIRROR"/patches/packages/*.t?z; do
-    basepkg=$(basename "$pkg")
-    pkgname=$(echo "$basepkg" | rev | cut -d- -f4- | rev)
-    PATCHES["$pkgname"]="$pkg"
+    # Only add packages if they exist -- likely only an issue after a new release
+    if [ -f "$pkg" ]; then
+      basepkg=$(basename "$pkg")
+      pkgname=$(echo "$basepkg" | rev | cut -d- -f4- | rev)
+      PATCHES["$pkgname"]="$pkg"
+    else
+      continue
+    fi
   done
 
   # Loop through all the packages and install patched when available or
