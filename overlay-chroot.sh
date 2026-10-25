@@ -146,6 +146,9 @@ cleanup_chroot ()
   local chroot_dir="$1"
   local action="${2:-delete}"
 
+  # Kill any running processes before unmounting chroot
+  fuser -km "$chroot_dir"/chroot 2>/dev/null
+
   safe_umount "$chroot_dir"/chroot/dev/pts
   for mnt in dev proc sys; do
     safe_umount "$chroot_dir"/chroot/"$mnt"
