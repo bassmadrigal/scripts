@@ -104,6 +104,30 @@ RSYNC_MIRROR="${RSYNC_MIRROR%/}/$SLACKWARE_REPO"/
 
 # ---------------------------Derived Settings Ending---------------------------
 
+# Dependency check (but they should all be there on a full Slackware install)
+for i in mount umount chroot stat date rsync wget; do
+  if ! command -v "$i" &> /dev/null; then
+    echo "ERROR: $i is not installed or within your \$PATH!" >&2
+    echo "Please correct and try again." >&2
+    MISSING=yes
+  else
+    ERRMSG=$($i 2>&1)
+    RETVAL=$?
+    if [ "$RETVAL" = "127" ]; then
+      echo -e "\nERROR: $i is broken... likely because of updated libraries." >&2
+      echo "You most likely need to recompile $i to correct the issue." >&2
+      echo "It failed with the following error:" >&2
+      echo "$ERRMSG" >&2
+      BROKEN=yes
+    fi
+  fi
+done
+
+# If the above loop found missing or broken packages, exit
+if [ "$MISSING" = "yes" ] || [ "$BROKEN" = "yes" ]; then
+  exit 1
+fi
+
 # Simplify calling umount
 safe_umount ()
 {
